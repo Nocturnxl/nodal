@@ -81,10 +81,10 @@ async function launch(exePath, env, waitFor, timeoutMs = 20000) {
   const started = () => existsSync(log) && /INFO started .*"packaged":true/.test(readFileSync(log, 'utf8')) && existsSync(join(data, 'relay.db'));
   const run = await launch(exe, { RELAY_USER_DATA: data }, started);
   check('packaged app starts, opens its database and reports packaged=true', run.ok, run.ok ? '' : `exit code ${run.exited}`);
-  if (!run.ok && run.stderr()) console.log(`     app output:
-${run.stderr().split('
-').map((l) => '       ' + l).join('
-')}`);
+  if (!run.ok && run.stderr()) {
+    console.log('     app output:');
+    for (const line of run.stderr().split(/\r?\n/)) console.log(`       ${line}`);
+  }
   killTree(run.child);
 }
 
