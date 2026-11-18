@@ -59,7 +59,11 @@ jobs:
         run: npm run verify:package
       - name: Verify the packaged build (Linux, virtual display)
         if: runner.os == 'Linux'
-        run: xvfb-run --auto-servernum npm run verify:package
+        run: |
+          # An unpacked build has no installer to set up Chromium's sandbox helper; do what a package install does.
+          sudo chown root:root dist/linux-unpacked/chrome-sandbox
+          sudo chmod 4755 dist/linux-unpacked/chrome-sandbox
+          xvfb-run --auto-servernum npm run verify:package
       - uses: actions/upload-artifact@v4
         with:
           name: relay-${{ matrix.os }}

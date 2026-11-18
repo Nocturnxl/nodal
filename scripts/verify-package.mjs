@@ -56,7 +56,9 @@ for (const [name, want] of Object.entries(expected)) {
 }
 
 async function launch(exePath, env, waitFor, timeoutMs = 20000) {
-  const child = spawn(exePath, [], { env: { ...process.env, ...env }, stdio: 'ignore' });
+  const child = spawn(exePath, [], { env: { ...process.env, ...env }, stdio: ['ignore', 'ignore', 'pipe'] });
+  let stderr = '';
+  child.stderr.on('data', (d) => (stderr = (stderr + d).slice(-4000)));
   let exited = null;
   child.on('exit', (code) => (exited = code ?? -1));
   const start = Date.now();
@@ -68,7 +70,7 @@ async function launch(exePath, env, waitFor, timeoutMs = 20000) {
     }
     await sleep(250);
   }
-  return { child, ok: ok || waitFor(), exited };
+  return { child, ok: ok || waitFor(), exited, stderr: () => stderr.trim() };
 }
 
 // 2. Starts and opens its database
@@ -78,7 +80,11 @@ async function launch(exePath, env, waitFor, timeoutMs = 20000) {
   const log = join(data, 'logs', 'relay.log');
   const started = () => existsSync(log) && /INFO started .*"packaged":true/.test(readFileSync(log, 'utf8')) && existsSync(join(data, 'relay.db'));
   const run = await launch(exe, { RELAY_USER_DATA: data }, started);
-  check('packaged app starts, opens its database and reports packaged=true', run.ok);
+  check('packaged app starts, opens its database and reports packaged=true', run.ok, run.ok ? '' : `exit code ${run.exited}`);
+  if (!run.ok && run.stderr()) console.log(`     app output:
+${run.stderr().split('
+').map((l) => '       ' + l).join('
+')}`);
   killTree(run.child);
 }
 
