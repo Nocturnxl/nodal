@@ -2,7 +2,7 @@
   "name": "nodal",
   "productName": "NODAL",
   "version": "0.1.0",
-  "generatedAt": "2026-11-18T04:40:52+00:00",
+  "generatedAt": "2026-11-18T05:31:07+00:00",
   "git": null,
   "note": "The project folder is not a git repository, so there is no commit to pin this build to.",
   "host": {
@@ -250,7 +250,7 @@
   ],
   "source": {
     "files": 53,
-    "lines": 8022
+    "lines": 8062
   },
   "tests": {
     "files": 19,
@@ -261,7 +261,7 @@
       {
         "path": "out/main/index.js",
         "bytes": 118622,
-        "sha256": "b1ee69c7da28700ac018d0f87aa38a8ca11a9caf176f5ce23cd26f28e199f5e0"
+        "sha256": "deea193020c2c86f0f9931693a3f144c4bda44bb5a97da7bd6dfc79dad2a6827"
       },
       {
         "path": "out/preload/index.js",
@@ -269,46 +269,46 @@
         "sha256": "80b9ee4f7f14221128d17f4a831feaced5ea7bd0bd6928c9914eee58b6709697"
       },
       {
-        "path": "out/renderer/assets/index-Bgr78jP0.css",
-        "bytes": 64948,
-        "sha256": "52e61abc63c9ba51a6d061d22097fcaf9585cdfc42c1a39a7be532886f28b3bb"
+        "path": "out/renderer/assets/index-kpyRYBGa.js",
+        "bytes": 2329240,
+        "sha256": "c5f27c03df85db68ebc3bd1e23cf814a3bcd1300b04a625af214cedbd66a9d1f"
       },
       {
-        "path": "out/renderer/assets/index-DwZx42r0.js",
-        "bytes": 2328511,
-        "sha256": "eb20666df2c3b25c80bd691db72fc386ef1afcd69d9e0ec7f821fc071e492883"
+        "path": "out/renderer/assets/index-zxHsCkBG.css",
+        "bytes": 68724,
+        "sha256": "0e689d3d9de17f222e5153f30368e2323be5ec167f9a8d704398a107561b5630"
       },
       {
         "path": "out/renderer/index.html",
         "bytes": 647,
-        "sha256": "ce90e89672be631d72aad11a3e843c05da9fbb7372b5acd85a23685de3f13e00"
+        "sha256": "1f304f59ddde8ad36e6aa845dbbee5ae038743cf74434c1b1474672a936433bf"
       }
     ],
     "rendererFileCount": 65,
-    "rendererTotalBytes": 3547866
+    "rendererTotalBytes": 3552371
   },
   "packaged": {
     "target": "win32 x64, NSIS (unsigned)",
     "artifacts": [
       {
         "path": "dist/NODAL Setup 0.1.0.exe",
-        "bytes": 133336650,
-        "sha256": "4a3c5b0694514c2489dba41c82f63b9fa1258a975aefbe55f1d6957bdca29d25"
+        "bytes": 133335573,
+        "sha256": "8d701e4fc3d6ac52e78b617808296904431d3c6796dd9fd0868199f90a9e22f5"
       },
       {
         "path": "dist/NODAL Setup 0.1.0.exe.blockmap",
-        "bytes": 139682,
-        "sha256": "38357642f8da1a2b75c32f39a4b1e97c291f38e73d79dfeda7ab7519855255bc"
+        "bytes": 139791,
+        "sha256": "ab3876c64aff63dddd213110a0143e8a3aeac0f302484c2b95d61bf7a56adb02"
       },
       {
         "path": "dist/win-unpacked/NODAL.exe",
         "bytes": 250157056,
-        "sha256": "6e5bc90af21b6667333d092d4638752b74e30095ac5aca8a8adf8c62d9ddfd7c"
+        "sha256": "92e2290dc7f59cc9ff5f63e1064c3675222d29712874cb715dcaa0577eb9bddb"
       },
       {
         "path": "dist/win-unpacked/resources/app.asar",
-        "bytes": 12917782,
-        "sha256": "7d7f0424c65998fd6cb73a2864ac029022d75849ad7630f4b01af8dfa604581b"
+        "bytes": 12922287,
+        "sha256": "21e0d8def81b53f049839de8a9eeb811c609c58b7de6ee5b6d3c93f8afd087de"
       }
     ],
     "asarUnpacked": [

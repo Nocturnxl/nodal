@@ -1,6 +1,6 @@
 # NODAL build manifest
 
-Version 0.1.0, generated 2026-11-18T04:40:52+00:00. Machine-readable copy: `build-manifest.json`.
+Version 0.1.0, generated 2026-11-18T05:31:07+00:00. Machine-readable copy: `build-manifest.json`.
 
 The project folder is not a git repository, so this build is pinned by the lockfile hash and the artifact hashes below, not by a commit.
 
@@ -48,15 +48,15 @@ Everything else (32 direct dev dependencies, 708 packages in the lockfile) is bu
 
 | File | Size | SHA-256 |
 | --- | ---: | --- |
-| `dist/NODAL Setup 0.1.0.exe` | 127.2 MB | `4a3c5b0694514c2489dba41c82f63b9fa1258a975aefbe55f1d6957bdca29d25` |
-| `dist/NODAL Setup 0.1.0.exe.blockmap` | 136 KB | `38357642f8da1a2b75c32f39a4b1e97c291f38e73d79dfeda7ab7519855255bc` |
-| `dist/win-unpacked/NODAL.exe` | 238.6 MB | `6e5bc90af21b6667333d092d4638752b74e30095ac5aca8a8adf8c62d9ddfd7c` |
-| `dist/win-unpacked/resources/app.asar` | 12.3 MB | `7d7f0424c65998fd6cb73a2864ac029022d75849ad7630f4b01af8dfa604581b` |
-| `out/main/index.js` | 116 KB | `b1ee69c7da28700ac018d0f87aa38a8ca11a9caf176f5ce23cd26f28e199f5e0` |
+| `dist/NODAL Setup 0.1.0.exe` | 127.2 MB | `8d701e4fc3d6ac52e78b617808296904431d3c6796dd9fd0868199f90a9e22f5` |
+| `dist/NODAL Setup 0.1.0.exe.blockmap` | 137 KB | `ab3876c64aff63dddd213110a0143e8a3aeac0f302484c2b95d61bf7a56adb02` |
+| `dist/win-unpacked/NODAL.exe` | 238.6 MB | `92e2290dc7f59cc9ff5f63e1064c3675222d29712874cb715dcaa0577eb9bddb` |
+| `dist/win-unpacked/resources/app.asar` | 12.3 MB | `21e0d8def81b53f049839de8a9eeb811c609c58b7de6ee5b6d3c93f8afd087de` |
+| `out/main/index.js` | 116 KB | `deea193020c2c86f0f9931693a3f144c4bda44bb5a97da7bd6dfc79dad2a6827` |
 | `out/preload/index.js` | 4 KB | `80b9ee4f7f14221128d17f4a831feaced5ea7bd0bd6928c9914eee58b6709697` |
-| `out/renderer/assets/index-Bgr78jP0.css` | 63 KB | `52e61abc63c9ba51a6d061d22097fcaf9585cdfc42c1a39a7be532886f28b3bb` |
-| `out/renderer/assets/index-DwZx42r0.js` | 2.2 MB | `eb20666df2c3b25c80bd691db72fc386ef1afcd69d9e0ec7f821fc071e492883` |
-| `out/renderer/index.html` | 1 KB | `ce90e89672be631d72aad11a3e843c05da9fbb7372b5acd85a23685de3f13e00` |
+| `out/renderer/assets/index-kpyRYBGa.js` | 2.2 MB | `c5f27c03df85db68ebc3bd1e23cf814a3bcd1300b04a625af214cedbd66a9d1f` |
+| `out/renderer/assets/index-zxHsCkBG.css` | 67 KB | `0e689d3d9de17f222e5153f30368e2323be5ec167f9a8d704398a107561b5630` |
+| `out/renderer/index.html` | 1 KB | `1f304f59ddde8ad36e6aa845dbbee5ae038743cf74434c1b1474672a936433bf` |
 | `package-lock.json` | 381 KB | `300adde9a62f6cde01ee88399a417e8c01e81c0f7e261d5a0a3243327611254d` |
 
 The renderer bundle is 65 files, 3.4 MB in total. Most of the file count is KaTeX fonts.
@@ -77,5 +77,5 @@ The installer is unsigned and has no update feed. It will show a SmartScreen war
 
 ## Size of the code
 
-- Source: 53 files, 8022 lines
+- Source: 53 files, 8062 lines
 - Tests: 19 files, 2784 lines
