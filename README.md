@@ -2,7 +2,7 @@
 
 A single-user desktop chat client for any OpenAI-compatible LLM endpoint. You give it a base URL and an API key, it discovers the models that endpoint serves, and you chat with streamed replies. Nothing leaves the machine except the requests you send to the provider you choose.
 
-"Relay" is a placeholder name. The app has no icon yet and uses Electron's default.
+"Relay" is a placeholder name. The icon is `build/icon.png`.
 
 ## Quick start
 
@@ -139,7 +139,7 @@ Still open, and not something the code can settle on its own:
 
 - **Signing and notarization.** Builds are unsigned. Windows needs a code-signing certificate; macOS needs an Apple Developer ID.
 - **An update feed.** `publish` is `null` in `electron-builder.yml`.
-- **Name, icon and licence.** "Relay" is a placeholder, the icon is Electron's default, and `package.json` says `UNLICENSED`.
+- **Name and licence.** "Relay" is a placeholder, and `package.json` says `UNLICENSED`.
 - **macOS and Linux.** Never built or run. The CI workflow covers both but has not executed.
 - **Real providers other than Venice**, and the app's own screens against Venice (only the adapter was tested live).
 - **A screen-reader pass.** The automated scan finds missing labels and low contrast, not whether the app is pleasant to use without sight.

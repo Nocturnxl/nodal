@@ -11,6 +11,8 @@ files:
 extraResources:
   - from: THIRD-PARTY-NOTICES.md
     to: THIRD-PARTY-NOTICES.md
+  - from: build/icon.png
+    to: icon.png
 asar: true
 # Native modules cannot load from inside the archive.
 asarUnpack:
@@ -30,6 +32,7 @@ electronFuses:
   grantFileProtocolExtraPrivileges: false
 
 win:
+  icon: build/icon.png
   target:
     - nsis
   # Signed when a certificate is configured (CSC_LINK / CSC_KEY_PASSWORD or
@@ -42,12 +45,14 @@ nsis:
   deleteAppDataOnUninstall: false
 
 mac:
+  icon: build/icon.png
   target:
     - dmg
   category: public.app-category.productivity
   hardenedRuntime: true
 
 linux:
+  icon: build/icon.png
   target:
     - AppImage
     # A .deb needs a maintainer name and email (`linux.maintainer`). Add `- deb`
