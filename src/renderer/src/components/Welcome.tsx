@@ -42,7 +42,7 @@ export function Welcome() {
   const list = connected ? (models[connected.provider.id]?.models ?? []) : [];
 
   return (
-    <div className="flex h-full items-start justify-center overflow-y-auto bg-bg px-6 py-[7vh]">
+    <div className="brand-wash flex h-full items-start justify-center overflow-y-auto bg-bg px-6 py-[7vh]">
       <div className="w-full max-w-[560px]">
         {!preset && (
           <>

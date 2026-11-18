@@ -143,7 +143,7 @@ function createWindow(): void {
     // Window and taskbar icon on Windows and Linux; macOS takes it from the app bundle.
     icon: app.isPackaged ? join(process.resourcesPath, 'icon.png') : join(__dirname, '../../build/icon.png'),
     autoHideMenuBar: true,
-    backgroundColor: nativeTheme.shouldUseDarkColors ? '#17171a' : '#fbfbfa',
+    backgroundColor: nativeTheme.shouldUseDarkColors ? '#11131b' : '#f8f9fc',
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
       contextIsolation: true,

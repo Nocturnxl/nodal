@@ -2,59 +2,68 @@
 @import 'katex/dist/katex.min.css';
 
 :root {
-  --bg: #fbfbfa;
-  --panel: #f3f2ef;
+  /* Cool neutrals and a blue-violet accent, taken from the NODAL mark. */
+  --bg: #f8f9fc;
+  --panel: #f0f2f8;
   --raised: #ffffff;
-  --hover: #eae8e3;
-  --line: #e0ddd6;
-  --fg: #1d1c1a;
-  --muted: #58554e;
-  --faint: #69655c;
-  --accent: #2f5fd0;
-  --accent-soft: #e4ebfb;
+  --hover: #e4e8f2;
+  --line: #dbdfea;
+  --fg: #161925;
+  --muted: #4d5266;
+  --faint: #5d6277;
+  --accent: #4347d9;
+  --accent-soft: #e5e8fd;
   --accent-fg: #ffffff;
+  --bubble: #e8ebfc;
   --danger: #b3261e;
   --danger-soft: #fbe9e7;
   --warn: #8a5a00;
   --warn-soft: #fbf1d9;
   --ok: #1f7a4a;
   --ok-soft: #e2f4ea;
-  --code: #f4f3f0;
-  --shadow: 0 8px 30px rgb(0 0 0 / 0.12);
-  --hl-kw: #a626a4;
-  --hl-str: #2a7230;
+  --code: #f1f3f9;
+  --shadow: 0 10px 34px rgb(22 28 70 / 0.14);
+  --glow: rgb(91 108 255 / 0.1);
+  --hl-kw: #9a1fa8;
+  --hl-str: #1f7038;
   --hl-num: #855a00;
-  --hl-fn: #2f5fd0;
-  --hl-cm: #6b6b65;
+  --hl-fn: #3a40cf;
+  --hl-cm: #646a7d;
   --hl-type: #9c4d00;
+  /* The mark's gradient. --brand carries white text, so every stop is dark
+     enough for it; --brand-bright adds the cyan and is used only on shapes. */
+  --brand: linear-gradient(135deg, #2563eb, #6d3df5 55%, #9333ea);
+  --brand-bright: linear-gradient(135deg, #19c2ff, #5b6cff 50%, #a23cff);
   color-scheme: light;
 }
 
 :root[data-theme='dark'] {
-  --bg: #17171a;
-  --panel: #1e1e22;
-  --raised: #25252a;
-  --hover: #2c2c32;
-  --line: #34343b;
-  --fg: #e9e8e4;
-  --muted: #b3b1aa;
-  --faint: #9c9a93;
-  --accent: #7ea2ff;
-  --accent-soft: #24304f;
-  --accent-fg: #0d1326;
+  --bg: #11131b;
+  --panel: #171a24;
+  --raised: #1e2230;
+  --hover: #272c3c;
+  --line: #2e3446;
+  --fg: #e8eaf3;
+  --muted: #aeb4c8;
+  --faint: #989eb4;
+  --accent: #9aa5ff;
+  --accent-soft: #272d57;
+  --accent-fg: #0e1030;
+  --bubble: #242a4a;
   --danger: #ff8a80;
   --danger-soft: #3a1f1d;
   --warn: #f0c060;
   --warn-soft: #3a2f14;
   --ok: #6fd09a;
   --ok-soft: #173224;
-  --code: #1f1f24;
-  --shadow: 0 8px 30px rgb(0 0 0 / 0.5);
-  --hl-kw: #c792ea;
-  --hl-str: #a5d6a7;
+  --code: #191c27;
+  --shadow: 0 10px 34px rgb(0 0 0 / 0.55);
+  --glow: rgb(110 124 255 / 0.16);
+  --hl-kw: #c9a0ff;
+  --hl-str: #9fdcae;
   --hl-num: #f0b866;
-  --hl-fn: #8fb4ff;
-  --hl-cm: #9c9a93;
+  --hl-fn: #8fb8ff;
+  --hl-cm: #989eb4;
   --hl-type: #ffb074;
   color-scheme: dark;
 }
@@ -71,6 +80,7 @@
   --color-accent: var(--accent);
   --color-accent-soft: var(--accent-soft);
   --color-accent-fg: var(--accent-fg);
+  --color-bubble: var(--bubble);
   --color-danger: var(--danger);
   --color-danger-soft: var(--danger-soft);
   --color-warn: var(--warn);
@@ -161,26 +171,50 @@ button:not(:disabled) {
 @keyframes nodal-pulse {
   0%,
   100% {
-    opacity: 0.25;
+    opacity: 0.3;
+    transform: scale(0.8);
   }
   50% {
     opacity: 1;
+    transform: scale(1.15);
   }
 }
+/* Waiting for the model: three nodes in the mark's colours. */
 .typing-dot {
   display: inline-block;
-  width: 6px;
-  height: 6px;
-  margin-right: 3px;
+  width: 7px;
+  height: 7px;
+  margin-right: 5px;
   border-radius: 50%;
-  background: var(--muted);
-  animation: nodal-pulse 1.2s infinite;
+  background: #19c2ff;
+  animation: nodal-pulse 1.2s infinite ease-in-out;
 }
 .typing-dot:nth-child(2) {
-  animation-delay: 0.2s;
+  background: #5b6cff;
+  animation-delay: 0.18s;
 }
 .typing-dot:nth-child(3) {
-  animation-delay: 0.4s;
+  background: #a23cff;
+  animation-delay: 0.36s;
+}
+
+/* In the components layer so utilities (for example a disabled state) can override them. */
+@layer components {
+  /* The brand gradient, used sparingly: primary actions and small markers. */
+  .brand {
+    background-image: var(--brand);
+    color: #ffffff;
+  }
+  .brand-bright {
+    background-image: var(--brand-bright);
+  }
+  /* A soft wash of the brand colour behind empty screens. */
+  .brand-glow {
+    background-image: radial-gradient(closest-side, var(--glow), transparent);
+  }
+  .brand-wash {
+    background-image: radial-gradient(900px 520px at 12% -8%, var(--glow), transparent 70%);
+  }
 }
 
 @keyframes nodal-in {

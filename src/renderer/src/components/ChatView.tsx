@@ -5,7 +5,7 @@ import { currentPath, findModel, useStore } from '../store';
 import { Composer } from './Composer';
 import { Inspector } from './Inspector';
 import { MessageList } from './MessageList';
-import { Button, IconButton } from './ui';
+import { Button, IconButton, Logo } from './ui';
 
 function EmptyState() {
   const providers = useStore((s) => s.providers);
@@ -13,7 +13,8 @@ function EmptyState() {
   const setWelcome = useStore((s) => s.setWelcome);
   return (
     <div className="flex flex-1 items-center justify-center">
-      <div className="max-w-sm text-center">
+      <div className="brand-glow flex max-w-sm flex-col items-center px-16 py-14 text-center">
+        <Logo size={64} wordmark={false} className="mb-5" />
         <div className="text-[18px] font-semibold">No conversation open</div>
         <p className="mt-1 text-muted">{providers.length ? 'Pick a model to start a new chat.' : 'Connect a provider to start chatting.'}</p>
         <Button variant="primary" className="mt-4" onClick={() => (providers.length ? setPicker(true) : setWelcome(true))}>
@@ -90,7 +91,8 @@ export function ChatView() {
 
         {path.length === 0 ? (
           <div className="flex flex-1 items-center justify-center px-6">
-            <div className="text-center">
+            <div className="brand-glow flex flex-col items-center px-20 py-16 text-center">
+              <Logo size={72} wordmark={false} className="mb-5" />
               <div className="text-[20px] font-semibold tracking-tight">{model?.displayName ?? conv.modelId}</div>
               <p className="mt-1 text-muted">
                 {provider?.displayName ?? 'Unknown provider'}

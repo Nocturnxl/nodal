@@ -36,6 +36,7 @@ function Item({ c }: { c: ConversationListItem }) {
       className={cx('group relative rounded-md', active ? 'bg-hover' : 'hover:bg-hover/60', c.archived && 'opacity-60')}
       data-conversation-id={c.id}
     >
+      {active && <span aria-hidden className="brand-bright absolute top-1.5 bottom-1.5 left-0 w-[3px] rounded-full" />}
       {renaming ? (
         <input
           ref={input}
@@ -59,7 +60,7 @@ function Item({ c }: { c: ConversationListItem }) {
               {c.pinned && <Pin size={11} className="shrink-0 text-accent" />}
               <span className="min-w-0 flex-1 truncate">{c.title}</span>
               {streaming ? (
-                <span className="h-1.5 w-1.5 shrink-0 animate-pulse rounded-full bg-accent" aria-label="Generating" />
+                <span className="brand-bright h-1.5 w-1.5 shrink-0 animate-pulse rounded-full" aria-label="Generating" />
               ) : (
                 <span className="shrink-0 text-[11px] text-faint group-hover:invisible">{relativeTime(c.updatedAt)}</span>
               )}

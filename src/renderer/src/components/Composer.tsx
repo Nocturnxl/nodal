@@ -104,7 +104,10 @@ export function Composer({ conversation, model, providerName }: { conversation: 
   return (
     <div className="mx-auto w-full max-w-[820px] px-6 pb-3">
       <div
-        className={cx('rounded-2xl border bg-raised shadow-sm transition-colors', dragging ? 'border-accent' : 'border-line focus-within:border-accent')}
+        className={cx(
+          'rounded-2xl border bg-raised shadow-[0_2px_14px_rgb(22_28_70/0.07)] transition-[border-color,box-shadow]',
+          dragging ? 'border-accent' : 'border-line focus-within:border-accent focus-within:shadow-[0_0_0_3px_var(--accent-soft)]',
+        )}
         onDragOver={(e) => {
           if (canAttach && e.dataTransfer.types.includes('Files')) {
             e.preventDefault();
@@ -203,7 +206,7 @@ export function Composer({ conversation, model, providerName }: { conversation: 
               title="Send (Enter)"
               disabled={!draft.trim() && pending.length === 0}
               onClick={() => void submit()}
-              className="flex h-8 w-8 items-center justify-center rounded-full bg-accent text-accent-fg hover:opacity-90 disabled:bg-hover disabled:text-faint"
+              className="brand-bright flex h-8 w-8 items-center justify-center rounded-full text-white shadow-sm hover:brightness-110 disabled:bg-hover disabled:bg-none disabled:text-faint disabled:shadow-none"
             >
               <ArrowUp size={16} />
             </button>

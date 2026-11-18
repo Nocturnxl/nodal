@@ -34,7 +34,7 @@ export function Button({ variant = 'default', size = 'md', className, type = 'bu
       className={cx(
         'inline-flex items-center justify-center gap-1.5 rounded-md font-medium whitespace-nowrap transition-colors disabled:opacity-50',
         size === 'sm' ? 'h-7 px-2 text-[12.5px]' : 'h-8 px-3 text-[13px]',
-        variant === 'primary' && 'bg-accent text-accent-fg hover:opacity-90',
+        variant === 'primary' && 'brand shadow-sm hover:brightness-110',
         variant === 'default' && 'border border-line bg-raised hover:bg-hover',
         variant === 'ghost' && 'text-muted hover:bg-hover hover:text-fg',
         variant === 'danger' && 'border border-line bg-raised text-danger hover:bg-danger-soft',
@@ -68,7 +68,7 @@ export function Switch({ checked, onChange, label, disabled }: { checked: boolea
       aria-label={label}
       disabled={disabled}
       onClick={() => onChange(!checked)}
-      className={cx('relative h-[18px] w-8 shrink-0 rounded-full transition-colors disabled:opacity-50', checked ? 'bg-accent' : 'bg-line')}
+      className={cx('relative h-[18px] w-8 shrink-0 rounded-full transition-colors disabled:opacity-50', checked ? 'brand' : 'bg-line')}
     >
       <span className={cx('absolute top-[2px] h-[14px] w-[14px] rounded-full bg-white shadow transition-[left]', checked ? 'left-[16px]' : 'left-[2px]')} />
     </button>
