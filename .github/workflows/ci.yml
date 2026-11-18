@@ -43,6 +43,7 @@ jobs:
             echo -n "probe" | secret-tool store --label=probe relay probe
             test "$(secret-tool lookup relay probe)" = "probe"
             echo "keyring ready"
+            node scripts/diagnose-keyring.mjs
             npx playwright test
           '
       - name: End-to-end
