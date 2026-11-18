@@ -11,11 +11,13 @@ import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 
 const root = resolve(import.meta.dirname, '..');
-const unpacked = {
-  win32: ['dist/win-unpacked', 'Relay.exe', 'resources/app.asar'],
-  linux: ['dist/linux-unpacked', 'relay', 'resources/app.asar'],
-  darwin: ['dist/mac', 'Relay.app/Contents/MacOS/Relay', 'Relay.app/Contents/Resources/app.asar'],
+const layouts = {
+  win32: { dirs: ['dist/win-unpacked', 'dist/win-arm64-unpacked'], exe: 'Relay.exe', asar: 'resources/app.asar' },
+  linux: { dirs: ['dist/linux-unpacked', 'dist/linux-arm64-unpacked'], exe: 'relay', asar: 'resources/app.asar' },
+  darwin: { dirs: ['dist/mac', 'dist/mac-arm64', 'dist/mac-universal'], exe: 'Relay.app/Contents/MacOS/Relay', asar: 'Relay.app/Contents/Resources/app.asar' },
 }[process.platform];
+const found = layouts.dirs.find((d) => existsSync(join(root, d, layouts.exe)));
+const unpacked = [found ?? layouts.dirs[0], layouts.exe, layouts.asar];
 const dir = join(root, unpacked[0]);
 const exe = join(dir, unpacked[1]);
 if (!existsSync(exe)) {

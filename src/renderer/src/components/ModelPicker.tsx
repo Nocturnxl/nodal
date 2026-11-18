@@ -254,7 +254,7 @@ export function ModelPicker() {
                       >
                         <span className="min-w-0 flex-1 truncate">
                           {m.displayName}
-                          {isCurrent && <span className="ml-1.5 text-[11.5px] text-accent">current</span>}
+                          {isCurrent && <span className="ml-1.5 text-[11.5px] font-medium text-muted">current</span>}
                           {m.details?.offline && <span className="ml-1.5 text-[11.5px] text-danger">offline</span>}
                         </span>
                         <CapBadges m={m} />

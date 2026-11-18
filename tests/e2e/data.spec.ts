@@ -2,7 +2,8 @@ import { _electron as electron, expect, test, type ElectronApplication, type Pag
 import type { RelayApi } from '@shared/api';
 import { existsSync, mkdtempSync, readdirSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join, resolve } from 'node:path';
+import { join } from 'node:path';
+import { appArgs } from './launch';
 import { MOCK_KEY, startMockServer, type MockServer } from '../mock/server';
 
 declare global {
@@ -14,7 +15,6 @@ declare global {
 // Image attachments through the composer, deleting a chat removes its images,
 // and a full ZIP export restores into an empty profile from the welcome screen.
 
-const ROOT = resolve(__dirname, '../..');
 // A real 1x1 PNG.
 const PNG = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==', 'base64');
 
@@ -23,7 +23,7 @@ const dirs: string[] = [];
 const apps: ElectronApplication[] = [];
 
 async function launch(userData: string): Promise<{ app: ElectronApplication; page: Page }> {
-  const app = await electron.launch({ args: [ROOT], env: { ...process.env, RELAY_USER_DATA: userData } as Record<string, string> });
+  const app = await electron.launch({ args: appArgs(), env: { ...process.env, RELAY_USER_DATA: userData } as Record<string, string> });
   apps.push(app);
   const page = await app.firstWindow();
   await page.waitForLoadState('domcontentloaded');

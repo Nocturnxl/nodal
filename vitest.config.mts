@@ -8,5 +8,6 @@ export default defineConfig({
     environment: 'node',
     pool: 'forks',
     testTimeout: 20000,
+    hookTimeout: 60000,
   },
 });

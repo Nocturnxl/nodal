@@ -27,11 +27,18 @@ jobs:
       - run: npm test
       - run: npm audit --omit=dev --audit-level=high
       # End-to-end tests drive the built app against the local mock provider.
-      - name: End-to-end (Linux, virtual display)
+      # The app stores keys only in a real keyring, so the Linux run needs one:
+      # a D-Bus session with gnome-keyring unlocked, inside a virtual display.
+      - name: End-to-end (Linux, virtual display and keyring)
         if: runner.os == 'Linux'
         run: |
-          sudo apt-get update && sudo apt-get install -y xvfb gnome-keyring dbus-x11
-          xvfb-run --auto-servernum dbus-run-session -- bash -c 'echo -n "" | gnome-keyring-daemon --unlock --components=secrets && npx playwright test'
+          sudo apt-get update && sudo apt-get install -y xvfb gnome-keyring dbus-x11 libsecret-tools
+          xvfb-run --auto-servernum dbus-run-session -- bash -ec '
+            echo -n "ci-keyring" | gnome-keyring-daemon --daemonize --unlock --components=secrets
+            echo -n "probe" | secret-tool store --label=probe relay probe
+            secret-tool lookup relay probe >/dev/null && echo "keyring ready"
+            npx playwright test
+          '
       - name: End-to-end
         if: runner.os != 'Linux'
         run: npx playwright test

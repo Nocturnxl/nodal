@@ -2,8 +2,9 @@ import { _electron as electron, expect, test, type ElectronApplication, type Pag
 import { execSync } from 'node:child_process';
 import { mkdtempSync, readdirSync, readFileSync, rmSync, statSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join, resolve } from 'node:path';
+import { join } from 'node:path';
 import type { RelayApi } from '@shared/api';
+import { appArgs } from './launch';
 import { MOCK_KEY, startMockServer, type MockServer } from '../mock/server';
 
 declare global {
@@ -12,7 +13,6 @@ declare global {
   }
 }
 
-const ROOT = resolve(__dirname, '../..');
 let mock: MockServer;
 let userData: string;
 let app: ElectronApplication;
@@ -20,7 +20,7 @@ let page: Page;
 const foreignRequests: string[] = [];
 
 async function launch(): Promise<void> {
-  app = await electron.launch({ args: [ROOT], env: { ...process.env, RELAY_USER_DATA: userData } as Record<string, string> });
+  app = await electron.launch({ args: appArgs(), env: { ...process.env, RELAY_USER_DATA: userData } as Record<string, string> });
   page = await app.firstWindow();
   page.on('request', (r) => {
     if (!r.url().startsWith('app://relay/') && !r.url().startsWith('blob:') && !r.url().startsWith('data:')) foreignRequests.push(r.url());

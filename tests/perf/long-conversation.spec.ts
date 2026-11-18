@@ -4,7 +4,8 @@ import type { RelayApi } from '@shared/api';
 // 5,000-message conversation and records scroll, typing and memory figures.
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join, resolve } from 'node:path';
+import { join } from 'node:path';
+import { appArgs } from '../e2e/launch';
 import { MOCK_KEY, startMockServer } from '../mock/server';
 
 declare global {
@@ -53,7 +54,7 @@ test('measure a 5,000-message conversation', async () => {
     }),
   );
 
-  const app = await electron.launch({ args: [resolve(__dirname, '../..')], env: { ...process.env, RELAY_USER_DATA: userData } as Record<string, string> });
+  const app = await electron.launch({ args: appArgs(), env: { ...process.env, RELAY_USER_DATA: userData } as Record<string, string> });
   const page = await app.firstWindow();
   await page.locator('h1').first().waitFor();
   await app.evaluate(({ dialog }, filePath) => {

@@ -10,6 +10,7 @@ import { KeyStore, type SafeStorageLike } from '../../src/main/secrets/keystore'
 import { MOCK_KEY } from '../mock/server';
 
 const dirs: string[] = [];
+const stores: Store[] = [];
 
 export function tmpDir(): string {
   const d = mkdtempSync(join(tmpdir(), 'relay-test-'));
@@ -18,6 +19,14 @@ export function tmpDir(): string {
 }
 
 export function cleanupTmp(): void {
+  // Windows cannot delete a folder while SQLite still has files open in it.
+  for (const s of stores.splice(0)) {
+    try {
+      s.db.close();
+    } catch {
+      /* already closed */
+    }
+  }
   for (const d of dirs.splice(0)) {
     try {
       rmSync(d, { recursive: true, force: true, maxRetries: 3 });
@@ -54,6 +63,7 @@ export function mockProvider(baseUrl: string, over: Partial<ProviderConfig> = {}
 export function makeEnv(baseUrl: string, over: Partial<ProviderConfig> = {}) {
   const dir = tmpDir();
   const store = new Store(openDatabase(dir));
+  stores.push(store);
   const keys = new KeyStore(join(dir, 'keys.json'), fakeSafeStorage, 'win32');
   const attachments = new AttachmentStore(join(dir, 'attachments'));
   const provider = store.saveProvider(mockProvider(baseUrl, over));

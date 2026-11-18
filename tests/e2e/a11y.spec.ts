@@ -3,7 +3,8 @@ import { _electron as electron, expect, test, type ElectronApplication, type Pag
 import type { RelayApi } from '@shared/api';
 import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join, resolve } from 'node:path';
+import { join } from 'node:path';
+import { appArgs } from './launch';
 import { MOCK_KEY, startMockServer, type MockServer } from '../mock/server';
 
 declare global {
@@ -32,7 +33,7 @@ async function scan(name: string): Promise<void> {
 test.beforeAll(async () => {
   mock = await startMockServer({ chunkDelayMs: 1 });
   userData = mkdtempSync(join(tmpdir(), 'relay-e2e-a11y-'));
-  app = await electron.launch({ args: [resolve(__dirname, '../..')], env: { ...process.env, RELAY_USER_DATA: userData } as Record<string, string> });
+  app = await electron.launch({ args: appArgs(), env: { ...process.env, RELAY_USER_DATA: userData } as Record<string, string> });
   page = await app.firstWindow();
   await page.waitForLoadState('domcontentloaded');
 });
@@ -88,6 +89,11 @@ for (const theme of ['light', 'dark'] as const) {
     await page.keyboard.press('Control+k');
     await expect(page.getByLabel('Search models')).toBeVisible();
     await scan('model picker');
+    // Again with a row highlighted by the mouse: its background changes, so contrast must hold there too.
+    await page.getByRole('option').first().hover();
+    await scan('model picker, row highlighted');
+    await page.getByRole('option', { name: /current/ }).hover();
+    await scan('model picker, current row highlighted');
     await page.keyboard.press('Escape');
 
     await page.keyboard.press('Control+,');
