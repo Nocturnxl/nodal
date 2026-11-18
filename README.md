@@ -32,7 +32,7 @@ Each mock model ID triggers one behaviour (`mock-echo`, `mock-markdown`, `mock-l
 | `npm test` | Unit tests (Vitest): parsers, error table, adapters against the mock server, database, stream manager, key store, export/import. |
 | `npm run e2e` | Bundles the app, then drives it with Playwright against the mock provider. |
 | `npm run build` | Typecheck, bundle, unit tests. |
-| `npm run dist` | `build`, then installers through electron-builder (NSIS on Windows, dmg on macOS, AppImage on Linux) with Electron fuses applied. |
+| `npm run dist` | `build`, then installers through electron-builder (NSIS on Windows, dmg on macOS, AppImage and deb on Linux) with Electron fuses applied. |
 | `npm run verify:package` | Checks the packaged build in `dist/`: fuses, startup, refusal to run as Node, and that a tampered `app.asar` does not start. |
 | `npm run notices` | Regenerates `THIRD-PARTY-NOTICES.md` from what actually ships. |
 | `npm run perf:db`, `npm run perf:ui` | On-demand timings: database operations, and a 5,000-message conversation in the built app. |

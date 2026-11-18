@@ -55,8 +55,9 @@ linux:
   icon: build/icon.png
   target:
     - AppImage
-    # A .deb needs a maintainer name and email (`linux.maintainer`). Add `- deb`
-    # back once that contact is decided.
+    - deb
+  # Published in the .deb's metadata as the package maintainer.
+  maintainer: NODAL <150420308+Nocturnxl@users.noreply.github.com>
   category: Utility
 
 # No update feed is configured: releases are manual downloads until one is
