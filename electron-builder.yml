@@ -50,7 +50,8 @@ mac:
 linux:
   target:
     - AppImage
-    - deb
+    # A .deb needs a maintainer name and email (`linux.maintainer`). Add `- deb`
+    # back once that contact is decided.
   category: Utility
 
 # No update feed is configured: releases are manual downloads until one is
