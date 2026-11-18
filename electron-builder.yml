@@ -14,6 +14,9 @@ extraResources:
   - from: build/icon.png
     to: icon.png
 asar: true
+# better-sqlite3 ships prebuilt N-API binaries that load in Node and Electron
+# alike, so nothing needs compiling (or downloading) at packaging time.
+npmRebuild: false
 # Native modules cannot load from inside the archive.
 asarUnpack:
   - node_modules/better-sqlite3/**
