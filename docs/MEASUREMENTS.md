@@ -1,4 +1,4 @@
-# Relay runtime measurements
+# NODAL runtime measurements
 
 Measured 2026-11-18 on one machine: Windows 11 Pro 10.0.26300 x64, AMD Ryzen 9 9950X3D 16-Core, 62 GB RAM, Electron 45.3.3. This is a fast desktop, so treat the absolute numbers as a best case.
 
@@ -66,61 +66,62 @@ Taking these measurements found a bug, now fixed with a regression test: content
 | Step | Result | Time |
 | --- | --- | ---: |
 | Unit tests (Vitest) | 106 of 106 passed | 9.7 s summed over files, about 4.6 s wall clock |
-| End-to-end tests (Playwright, built app) | 27 of 27 passed | 23.8 s |
+| End-to-end tests (Playwright, built app) | 28 of 28 passed | 27.7 s |
 | Bundle (electron-vite) | ok | 2.2 s |
 
 ### Unit test files
 
 | File | Passed | Time |
 | --- | ---: | ---: |
-| `adapter.test.ts` | 26 of 26 | 1.80 s |
+| `adapter.test.ts` | 26 of 26 | 1.72 s |
 | `errors.test.ts` | 11 of 11 | 0.02 s |
-| `exporter.test.ts` | 8 of 8 | 1.19 s |
-| `sse.test.ts` | 4 of 4 | 0.01 s |
-| `store.test.ts` | 20 of 20 | 2.41 s |
-| `streams.test.ts` | 25 of 25 | 4.20 s |
-| `venice.test.ts` | 12 of 12 | 0.04 s |
+| `exporter.test.ts` | 8 of 8 | 1.17 s |
+| `sse.test.ts` | 4 of 4 | 0.00 s |
+| `store.test.ts` | 20 of 20 | 2.48 s |
+| `streams.test.ts` | 25 of 25 | 4.23 s |
+| `venice.test.ts` | 12 of 12 | 0.05 s |
 
 ### End-to-end tests
 
 | Test | Result | Time |
 | --- | --- | ---: |
-| welcome and provider form (light) | passed | 0.46 s |
-| welcome and provider form (dark) | passed | 0.31 s |
-| set up a provider and a conversation with rich content and an error | passed | 1.64 s |
-| chat, model picker and settings (light) | passed | 2.38 s |
-| chat, model picker and settings (dark) | passed | 2.33 s |
-| first run: a rejected key is not kept, a valid key connects and lists models | passed | 0.29 s |
-| a reply streams and is saved | passed | 0.24 s |
-| Stop cancels mid-stream within a second and keeps the partial text | passed | 0.28 s |
-| the renderer is sealed: no Node, no ipcRenderer, no key read-back, no network | passed | 0.22 s |
-| edit-and-resend creates a branch that can be switched back | passed | 0.31 s |
+| welcome and provider form (light) | passed | 0.49 s |
+| welcome and provider form (dark) | passed | 0.33 s |
+| set up a provider and a conversation with rich content and an error | passed | 1.54 s |
+| chat, model picker and settings (light) | passed | 2.83 s |
+| chat, model picker and settings (dark) | passed | 2.77 s |
+| first run: a rejected key is not kept, a valid key connects and lists models | passed | 1.13 s |
+| a reply streams and is saved | passed | 0.23 s |
+| Stop cancels mid-stream within a second and keeps the partial text | passed | 0.29 s |
+| the renderer is sealed: no Node, no ipcRenderer, no key read-back, no network | passed | 0.21 s |
+| edit-and-resend creates a branch that can be switched back | passed | 0.21 s |
 | error table: mock-401 shows "Key rejected" with status and request id | passed | 0.06 s |
 | error table: mock-402 shows "Out of balance" with status and request id | passed | 0.06 s |
 | error table: mock-403 shows "Not allowed" with status and request id | passed | 0.06 s |
-| error table: mock-404-html shows "Model or endpoint not found" with status and request id | passed | 0.05 s |
+| error table: mock-404-html shows "Model or endpoint not found" with status and request id | passed | 0.06 s |
 | error table: mock-400-context shows "Conversation too long" with status and request id | passed | 0.06 s |
 | error table: mock-429-always shows "Rate limited" with status and request id | passed | 1.41 s |
-| error table: mock-500-always shows "The provider had an error" with status and request id | passed | 3.47 s |
+| error table: mock-500-always shows "The provider had an error" with status and request id | passed | 3.46 s |
 | a mid-stream failure keeps the partial reply with Continue and Regenerate | passed | 0.15 s |
 | reasoning is shown in its own collapsible block | passed | 0.27 s |
-| export writes Markdown through the native save dialog | passed | 0.03 s |
-| killing the app mid-stream leaves the reply interrupted after relaunch | passed | 3.60 s |
-| search finds conversations by message content | passed | 0.21 s |
-| the renderer made no network requests and no key string is anywhere in the user-data folder | passed | 0.63 s |
+| export writes Markdown through the native save dialog | passed | 0.02 s |
+| killing the app mid-stream leaves the reply interrupted after relaunch | passed | 3.78 s |
+| search finds conversations by message content | passed | 0.23 s |
+| the renderer made no network requests and no key string is anywhere in the user-data folder | passed | 0.62 s |
 | a failed first attempt leaves no provider behind | passed | 0.64 s |
-| attach an image, send it, and deleting the chat deletes the image file | passed | 0.80 s |
-| math renders with KaTeX when switched on, and stays as text when off | passed | 0.77 s |
-| export everything to a ZIP and restore it into an empty profile from the welcome screen | passed | 1.85 s |
+| attach an image, send it, and deleting the chat deletes the image file | passed | 0.95 s |
+| pressing Enter straight after attaching still sends the image | passed | 1.67 s |
+| math renders with KaTeX when switched on, and stays as text when off | passed | 0.91 s |
+| export everything to a ZIP and restore it into an empty profile from the welcome screen | passed | 1.92 s |
 
 The two slow error-table rows are the automatic retries: three for a 429 and two for a 5xx, with backoff.
 
 ## Sizes
 
-- Installer: 126.3 MB
-- `app.asar`: 12.2 MB
+- Installer: 127.2 MB
+- `app.asar`: 12.3 MB
 - Renderer JavaScript: 2.2 MB, one file
-- Main process bundle: 115 KB
+- Main process bundle: 116 KB
 
 ## Not measured
 

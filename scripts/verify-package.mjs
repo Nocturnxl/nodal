@@ -12,9 +12,9 @@ import { join, resolve } from 'node:path';
 
 const root = resolve(import.meta.dirname, '..');
 const layouts = {
-  win32: { dirs: ['dist/win-unpacked', 'dist/win-arm64-unpacked'], exe: 'Relay.exe', asar: 'resources/app.asar' },
-  linux: { dirs: ['dist/linux-unpacked', 'dist/linux-arm64-unpacked'], exe: 'relay', asar: 'resources/app.asar' },
-  darwin: { dirs: ['dist/mac', 'dist/mac-arm64', 'dist/mac-universal'], exe: 'Relay.app/Contents/MacOS/Relay', asar: 'Relay.app/Contents/Resources/app.asar' },
+  win32: { dirs: ['dist/win-unpacked', 'dist/win-arm64-unpacked'], exe: 'NODAL.exe', asar: 'resources/app.asar' },
+  linux: { dirs: ['dist/linux-unpacked', 'dist/linux-arm64-unpacked'], exe: 'nodal', asar: 'resources/app.asar' },
+  darwin: { dirs: ['dist/mac', 'dist/mac-arm64', 'dist/mac-universal'], exe: 'NODAL.app/Contents/MacOS/NODAL', asar: 'NODAL.app/Contents/Resources/app.asar' },
 }[process.platform];
 const found = layouts.dirs.find((d) => existsSync(join(root, d, layouts.exe)));
 const unpacked = [found ?? layouts.dirs[0], layouts.exe, layouts.asar];
@@ -36,7 +36,7 @@ const killTree = (child) => {
   if (process.platform === 'win32') spawnSync('taskkill', ['/PID', String(child.pid), '/T', '/F'], { stdio: 'ignore' });
   else child.kill('SIGKILL');
 };
-const temp = (name) => mkdtempSync(join(tmpdir(), `relay-verify-${name}-`));
+const temp = (name) => mkdtempSync(join(tmpdir(), `nodal-verify-${name}-`));
 const cleanup = [];
 
 // 1. Fuses
@@ -77,9 +77,9 @@ async function launch(exePath, env, waitFor, timeoutMs = 20000) {
 {
   const data = temp('start');
   cleanup.push(data);
-  const log = join(data, 'logs', 'relay.log');
-  const started = () => existsSync(log) && /INFO started .*"packaged":true/.test(readFileSync(log, 'utf8')) && existsSync(join(data, 'relay.db'));
-  const run = await launch(exe, { RELAY_USER_DATA: data }, started);
+  const log = join(data, 'logs', 'nodal.log');
+  const started = () => existsSync(log) && /INFO started .*"packaged":true/.test(readFileSync(log, 'utf8')) && existsSync(join(data, 'nodal.db'));
+  const run = await launch(exe, { NODAL_USER_DATA: data }, started);
   check('packaged app starts, opens its database and reports packaged=true', run.ok, run.ok ? '' : `exit code ${run.exited}`);
   if (!run.ok && run.stderr()) {
     console.log('     app output:');
@@ -94,7 +94,7 @@ async function launch(exePath, env, waitFor, timeoutMs = 20000) {
   cleanup.push(data);
   const marker = join(data, 'ran-as-node.txt');
   const child = spawn(exe, ['-e', `require('fs').writeFileSync(${JSON.stringify(marker)}, 'x')`], {
-    env: { ...process.env, ELECTRON_RUN_AS_NODE: '1', RELAY_USER_DATA: data },
+    env: { ...process.env, ELECTRON_RUN_AS_NODE: '1', NODAL_USER_DATA: data },
     stdio: 'ignore',
   });
   await sleep(5000);
@@ -117,8 +117,8 @@ if (process.platform === 'win32' || process.platform === 'darwin') {
   closeSync(fd);
   const data = temp('tamper-data');
   cleanup.push(data);
-  const log = join(data, 'logs', 'relay.log');
-  const run = await launch(join(copy, 'app', unpacked[1]), { RELAY_USER_DATA: data }, () => existsSync(log), 12000);
+  const log = join(data, 'logs', 'nodal.log');
+  const run = await launch(join(copy, 'app', unpacked[1]), { NODAL_USER_DATA: data }, () => existsSync(log), 12000);
   check('a tampered app.asar does not start', !run.ok, run.exited !== null ? `exited with ${run.exited}` : 'no start within 12 s');
   killTree(run.child);
 } else {

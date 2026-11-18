@@ -31,7 +31,7 @@ export type KeyCheckResult = Omit<KeyCheck, 'saved'>;
 export interface ProviderAdapter {
   validateKey(p: ProviderRuntime): Promise<KeyCheckResult>;
   listModels(p: ProviderRuntime): Promise<ModelInfo[]>;
-  /** Yields normalized events and throws RelayError on failure. */
+  /** Yields normalized events and throws NodalError on failure. */
   streamChat(p: ProviderRuntime, req: ChatRequest, signal: AbortSignal): AsyncIterable<ChatEvent>;
   /** Provider-specific controls for the "Model options" panel. */
   extensions(model: ModelInfo): ExtensionField[];

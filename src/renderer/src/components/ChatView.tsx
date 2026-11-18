@@ -1,6 +1,6 @@
 import { ChevronDown, Download, PanelRight, TriangleAlert } from 'lucide-react';
 import { useMemo } from 'react';
-import { relay } from '../lib/ipc';
+import { nodal } from '../lib/ipc';
 import { currentPath, findModel, useStore } from '../store';
 import { Composer } from './Composer';
 import { Inspector } from './Inspector';
@@ -45,7 +45,7 @@ export function ChatView() {
 
   const exportAs = async (format: 'markdown' | 'json') => {
     try {
-      const file = await relay.data.exportConversation(conv.id, format);
+      const file = await nodal.data.exportConversation(conv.id, format);
       if (file) toast({ kind: 'success', title: `Exported to ${file}` });
     } catch (e) {
       toastError('Export failed', e);

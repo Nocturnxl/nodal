@@ -19,7 +19,7 @@ import type {
   Usage,
 } from '@shared/types';
 import { DEFAULT_SETTINGS } from '@shared/types';
-import { parseIpcError, relay } from './lib/ipc';
+import { parseIpcError, nodal } from './lib/ipc';
 import { deepestLeaf, pathTo, textOf } from './lib/tree';
 
 export interface Toast {
@@ -112,7 +112,7 @@ export function findModel(models: Record<string, ModelListResult>, providerId: s
 export const useStore = create<State>((set, get) => {
   async function startStream(req: ChatStartRequest): Promise<boolean> {
     try {
-      const res = await relay.chat.start(req);
+      const res = await nodal.chat.start(req);
       set((s) => {
         const detail = s.detail && s.detail.conversation.id === res.conversation.id ? { ...s.detail } : s.detail;
         if (detail && detail.conversation.id === res.conversation.id) {
@@ -214,7 +214,7 @@ export const useStore = create<State>((set, get) => {
       // Pull the authoritative rows (request id, usage) once the reply is final.
       void get().refreshConversations();
       if (get().detail?.conversation.id === batch.conversationId) {
-        void relay.conversations.get(batch.conversationId).then((d) => {
+        void nodal.conversations.get(batch.conversationId).then((d) => {
           if (get().detail?.conversation.id === d.conversation.id && !get().streams[d.conversation.id]) set({ detail: d });
         });
       } else if (error) {
@@ -247,8 +247,8 @@ export const useStore = create<State>((set, get) => {
     async init() {
       if (initStarted) return; // StrictMode runs effects twice in development
       initStarted = true;
-      relay.chat.onEvent(onBatch);
-      const [settings, providers] = await Promise.all([relay.settings.get(), relay.providers.list()]);
+      nodal.chat.onEvent(onBatch);
+      const [settings, providers] = await Promise.all([nodal.settings.get(), nodal.providers.list()]);
       set({ settings, providers });
       await Promise.all([get().refreshProviders(), get().refreshConversations()]);
       const first = get().conversations[0];
@@ -257,15 +257,15 @@ export const useStore = create<State>((set, get) => {
     },
 
     async refreshProviders() {
-      const providers = await relay.providers.list();
-      const entries = await Promise.all(providers.map(async (p) => [p.id, await relay.keys.status(p.id)] as const));
+      const providers = await nodal.providers.list();
+      const entries = await Promise.all(providers.map(async (p) => [p.id, await nodal.keys.status(p.id)] as const));
       set({ providers, keyStatus: Object.fromEntries(entries) });
       await Promise.all(providers.map((p) => get().loadModels(p.id)));
     },
 
     async loadModels(providerId, refresh = false) {
       try {
-        const res = await relay.models.list(providerId, { refresh });
+        const res = await nodal.models.list(providerId, { refresh });
         set((s) => ({ models: { ...s.models, [providerId]: res } }));
         return res;
       } catch (e) {
@@ -277,7 +277,7 @@ export const useStore = create<State>((set, get) => {
     async refreshConversations() {
       const { search, settings } = get();
       try {
-        const conversations = await relay.conversations.list({ search: search || undefined, includeArchived: settings.showArchived });
+        const conversations = await nodal.conversations.list({ search: search || undefined, includeArchived: settings.showArchived });
         set({ conversations });
       } catch (e) {
         get().toastError('Could not load conversations', e);
@@ -293,7 +293,7 @@ export const useStore = create<State>((set, get) => {
     async select(id) {
       if (!id) return set({ currentId: null, detail: null });
       try {
-        const detail = await relay.conversations.get(id);
+        const detail = await nodal.conversations.get(id);
         set({ currentId: id, detail });
         get().focusComposer();
       } catch (e) {
@@ -315,7 +315,7 @@ export const useStore = create<State>((set, get) => {
         return set({ currentId: null, detail: null, pickerOpen: true });
       }
       try {
-        const conv = await relay.conversations.create(pick);
+        const conv = await nodal.conversations.create(pick);
         await get().refreshConversations();
         await get().select(conv.id);
       } catch (e) {
@@ -330,7 +330,7 @@ export const useStore = create<State>((set, get) => {
           const same = s.detail.conversation.providerId === providerId;
           await get().patchConversation({ providerId, modelId, ...(same ? {} : { extensions: s.settings.defaultExtensions[providerId] ?? {} }) });
         } else {
-          const conv = await relay.conversations.create({ providerId, modelId });
+          const conv = await nodal.conversations.create({ providerId, modelId });
           await get().refreshConversations();
           await get().select(conv.id);
         }
@@ -346,7 +346,7 @@ export const useStore = create<State>((set, get) => {
       const target = id ?? get().currentId;
       if (!target) return;
       try {
-        const conv: Conversation = await relay.conversations.update(target, patch);
+        const conv: Conversation = await nodal.conversations.update(target, patch);
         set((s) => ({
           detail: s.detail?.conversation.id === conv.id ? { ...s.detail, conversation: conv } : s.detail,
           conversations: s.conversations.map((c) => (c.id === conv.id ? { ...c, ...conv } : c)),
@@ -359,7 +359,7 @@ export const useStore = create<State>((set, get) => {
 
     async removeConversation(id) {
       try {
-        await relay.conversations.delete(id);
+        await nodal.conversations.delete(id);
         if (get().currentId === id) set({ currentId: null, detail: null });
         await get().refreshConversations();
         if (!get().currentId) {
@@ -395,7 +395,7 @@ export const useStore = create<State>((set, get) => {
     stop(conversationId) {
       const id = conversationId ?? get().currentId;
       const ref = id ? get().streams[id] : undefined;
-      if (ref) void relay.chat.cancel(ref.streamId);
+      if (ref) void nodal.chat.cancel(ref.streamId);
     },
 
     async switchBranch(messageId) {
@@ -410,7 +410,7 @@ export const useStore = create<State>((set, get) => {
 
     async setSettings(patch) {
       try {
-        const settings = await relay.settings.set(patch);
+        const settings = await nodal.settings.set(patch);
         set({ settings });
         if (patch.showArchived !== undefined) await get().refreshConversations();
       } catch (e) {

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import type { Conversation, ExtensionField, ExtensionValue, ModelInfo, SamplingParams } from '@shared/types';
-import { relay } from '../lib/ipc';
+import { nodal } from '../lib/ipc';
 import { useStore } from '../store';
 import { Badge, Button, Label, Segmented, Switch } from './ui';
 
@@ -116,7 +116,7 @@ export function Inspector({ conversation, model }: { conversation: Conversation;
   // Provider-specific controls come from the adapter's extensions(); this panel knows nothing about any provider.
   useEffect(() => {
     let alive = true;
-    relay.models
+    nodal.models
       .extensions(conversation.providerId, conversation.modelId)
       .then((f) => alive && setFields(f))
       .catch(() => alive && setFields([]));

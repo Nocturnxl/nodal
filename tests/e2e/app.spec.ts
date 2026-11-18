@@ -3,13 +3,13 @@ import { execSync } from 'node:child_process';
 import { mkdtempSync, readdirSync, readFileSync, rmSync, statSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import type { RelayApi } from '@shared/api';
+import type { NodalApi } from '@shared/api';
 import { appArgs } from './launch';
 import { MOCK_KEY, startMockServer, type MockServer } from '../mock/server';
 
 declare global {
   interface Window {
-    relay: RelayApi;
+    nodal: NodalApi;
   }
 }
 
@@ -20,10 +20,10 @@ let page: Page;
 const foreignRequests: string[] = [];
 
 async function launch(): Promise<void> {
-  app = await electron.launch({ args: appArgs(), env: { ...process.env, RELAY_USER_DATA: userData } as Record<string, string> });
+  app = await electron.launch({ args: appArgs(), env: { ...process.env, NODAL_USER_DATA: userData } as Record<string, string> });
   page = await app.firstWindow();
   page.on('request', (r) => {
-    if (!r.url().startsWith('app://relay/') && !r.url().startsWith('blob:') && !r.url().startsWith('data:')) foreignRequests.push(r.url());
+    if (!r.url().startsWith('app://nodal/') && !r.url().startsWith('blob:') && !r.url().startsWith('data:')) foreignRequests.push(r.url());
   });
   await page.waitForLoadState('domcontentloaded');
 }
@@ -55,7 +55,7 @@ test.describe.configure({ mode: 'serial' });
 
 test.beforeAll(async () => {
   mock = await startMockServer({ chunkDelayMs: 15 });
-  userData = mkdtempSync(join(tmpdir(), 'relay-e2e-'));
+  userData = mkdtempSync(join(tmpdir(), 'nodal-e2e-'));
   await launch();
 });
 
@@ -66,7 +66,7 @@ test.afterAll(async () => {
 });
 
 test('first run: a rejected key is not kept, a valid key connects and lists models', async () => {
-  await expect(page.getByRole('heading', { name: 'Welcome to Relay' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Welcome to NODAL' })).toBeVisible();
   await page.getByRole('button', { name: /^Custom/ }).click();
   await page.getByLabel('Name', { exact: true }).fill('Mock provider');
   await page.getByLabel('Base URL', { exact: true }).fill(mock.url);
@@ -79,7 +79,7 @@ test('first run: a rejected key is not kept, a valid key connects and lists mode
   await expect(alert).toContainText('HTTP 401');
   await expect(alert).toContainText(/request mock-req-\d+/);
   await expect(page.getByRole('button', { name: 'Save anyway' })).toBeVisible();
-  expect(await page.evaluate(async () => (await window.relay.keys.status((await window.relay.providers.list())[0].id)).present)).toBe(false);
+  expect(await page.evaluate(async () => (await window.nodal.keys.status((await window.nodal.providers.list())[0].id)).present)).toBe(false);
 
   await page.getByLabel('API key', { exact: true }).fill(MOCK_KEY);
   await page.getByRole('button', { name: 'Connect', exact: true }).click();
@@ -123,8 +123,8 @@ test('the renderer is sealed: no Node, no ipcRenderer, no key read-back, no netw
       require: typeof w.require,
       process: typeof w.process,
       ipcRenderer: typeof w.ipcRenderer,
-      keysApi: Object.keys(window.relay.keys).sort(),
-      topLevel: Object.keys(window.relay).sort(),
+      keysApi: Object.keys(window.nodal.keys).sort(),
+      topLevel: Object.keys(window.nodal).sort(),
       fetchBlocked,
     };
   });
@@ -135,11 +135,11 @@ test('the renderer is sealed: no Node, no ipcRenderer, no key read-back, no netw
   expect(probe.topLevel).toEqual(['app', 'attachments', 'chat', 'conversations', 'data', 'keys', 'models', 'providers', 'settings']);
   expect(probe.fetchBlocked).toBe(true);
 
-  const status = await page.evaluate(async () => window.relay.keys.status((await window.relay.providers.list())[0].id));
+  const status = await page.evaluate(async () => window.nodal.keys.status((await window.nodal.providers.list())[0].id));
   expect(status).toEqual({ present: true, last4: MOCK_KEY.slice(-4) });
 
   // Main rejects malformed payloads before any handler runs.
-  const bad = await page.evaluate(() => window.relay.chat.start({ mode: 'send', conversationId: 42 } as never).then(() => 'accepted', (e: Error) => e.message));
+  const bad = await page.evaluate(() => window.nodal.chat.start({ mode: 'send', conversationId: 42 } as never).then(() => 'accepted', (e: Error) => e.message));
   expect(bad).toContain('invalid_request');
 
   // New windows are refused.
@@ -261,17 +261,17 @@ test('the renderer made no network requests and no key string is anywhere in the
   // Navigating away is refused (checked last: a cancelled navigation confuses the test driver).
   await page.evaluate(() => void setTimeout(() => (location.href = 'https://example.com/'), 0));
   await new Promise((r) => setTimeout(r, 500));
-  expect(await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0].webContents.getURL())).toBe('app://relay/index.html');
+  expect(await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0].webContents.getURL())).toBe('app://nodal/index.html');
   expect(foreignRequests).toEqual([]);
   await app.close();
   const files = filesUnder(userData);
   expect(files.some((f) => f.endsWith('keys.json'))).toBe(true);
-  expect(files.some((f) => f.endsWith('relay.db'))).toBe(true);
+  expect(files.some((f) => f.endsWith('nodal.db'))).toBe(true);
   for (const f of files) {
     if (statSync(f).size > 50 * 1024 * 1024) continue; // Chromium caches
     expect(readFileSync(f).includes(MOCK_KEY), `key found in ${f}`).toBe(false);
   }
-  const log = readFileSync(join(userData, 'logs', 'relay.log'), 'utf8');
+  const log = readFileSync(join(userData, 'logs', 'nodal.log'), 'utf8');
   expect(log).toContain('started');
   expect(log).not.toContain('Hello from the test');
 });

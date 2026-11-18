@@ -1,6 +1,6 @@
-appId: app.relay.desktop
-productName: Relay
-copyright: Relay
+appId: app.nodal.desktop
+productName: NODAL
+copyright: NODAL
 directories:
   output: dist
   buildResources: build

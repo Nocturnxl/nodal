@@ -1,7 +1,7 @@
 import { existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs';
 import { dirname } from 'node:path';
 import type { KeyStatus, KeyStoreStatus } from '@shared/types';
-import { relayError } from '../net/errors';
+import { nodalError } from '../net/errors';
 
 /** The slice of Electron's safeStorage this module needs (injected for tests). */
 export interface SafeStorageLike {
@@ -35,7 +35,7 @@ export class KeyStore {
         available: false,
         backend,
         reason:
-          'No system keyring (libsecret or kwallet) is available, so keys could only be stored unencrypted. Relay refuses to do that. Install and unlock a keyring, then restart.',
+          'No system keyring (libsecret or kwallet) is available, so keys could only be stored unencrypted. NODAL refuses to do that. Install and unlock a keyring, then restart.',
       };
     }
     if (!this.safe.isEncryptionAvailable()) {
@@ -64,7 +64,7 @@ export class KeyStore {
 
   set(providerId: string, key: string): void {
     const status = this.storeStatus();
-    if (!status.available) throw relayError('blocked', status.reason ?? 'Key storage is unavailable.');
+    if (!status.available) throw nodalError('blocked', status.reason ?? 'Key storage is unavailable.');
     const data = this.read();
     data.keys[providerId] = this.safe.encryptString(key).toString('base64');
     this.write(data);

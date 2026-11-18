@@ -58,7 +58,7 @@ export interface MockOptions {
   publicModels?: boolean;
 }
 
-const MARKDOWN_SAMPLE = `Here is a **quick tour** of what Relay renders.
+const MARKDOWN_SAMPLE = `Here is a **quick tour** of what NODAL renders.
 
 ## Lists and inline code
 

@@ -41,14 +41,14 @@ function connect(file: string): Db {
 }
 
 /**
- * Opens relay.db and runs pending migrations in one transaction. An existing
+ * Opens nodal.db and runs pending migrations in one transaction. An existing
  * database is copied to backups/ first; if a migration fails the copy is
  * restored and a MigrationError is thrown, so a half-migrated database is
  * never opened.
  */
 export function openDatabase(dir: string, migrations: Migration[] = MIGRATIONS, now: () => number = Date.now): Db {
   mkdirSync(dir, { recursive: true });
-  const file = join(dir, 'relay.db');
+  const file = join(dir, 'nodal.db');
   const existed = existsSync(file);
   let db = connect(file);
 
@@ -61,7 +61,7 @@ export function openDatabase(dir: string, migrations: Migration[] = MIGRATIONS, 
     const backups = join(dir, 'backups');
     mkdirSync(backups, { recursive: true });
     db.pragma('wal_checkpoint(TRUNCATE)');
-    backup = join(backups, `relay-v${current}-${new Date(now()).toISOString().replace(/[:.]/g, '-')}.db`);
+    backup = join(backups, `nodal-v${current}-${new Date(now()).toISOString().replace(/[:.]/g, '-')}.db`);
     copyFileSync(file, backup);
   }
 

@@ -64,7 +64,7 @@ export function App() {
   useShortcuts();
 
   useEffect(() => {
-    void init().catch((e) => useStore.getState().toastError('Relay could not start', e));
+    void init().catch((e) => useStore.getState().toastError('NODAL could not start', e));
   }, [init]);
 
   if (!ready) return <div className="h-full bg-bg" />;

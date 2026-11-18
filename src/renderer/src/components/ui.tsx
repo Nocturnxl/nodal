@@ -1,10 +1,25 @@
 import { Check, Copy } from 'lucide-react';
 import { useState, type ButtonHTMLAttributes, type ReactNode } from 'react';
 import type { NormalizedError } from '@shared/types';
+import markUrl from '../assets/nodal-mark.png';
 import { copyText, errorDetailsText } from '../lib/ipc';
 
 export function cx(...parts: (string | false | null | undefined)[]): string {
   return parts.filter(Boolean).join(' ');
+}
+
+/**
+ * The NODAL logo: the mark, and optionally the lettering beside it. The
+ * lettering is drawn as a mask, so it takes the current text colour and reads
+ * on light and dark surfaces alike.
+ */
+export function Logo({ size = 22, wordmark = true, className }: { size?: number; wordmark?: boolean; className?: string }) {
+  return (
+    <span role="img" aria-label="NODAL" className={cx('inline-flex shrink-0 items-center', className)} style={{ gap: Math.round(size * 0.4) }}>
+      <img src={markUrl} alt="" width={size} height={size} draggable={false} />
+      {wordmark && <span aria-hidden className="wordmark" style={{ height: Math.round(size * 0.46) }} />}
+    </span>
+  );
 }
 
 type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {

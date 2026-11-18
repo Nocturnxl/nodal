@@ -72,8 +72,8 @@ export interface ConversationPatch {
   activeLeafId?: string | null;
 }
 
-/** The whole surface exposed to the renderer as `window.relay`. No `keys.get` exists. */
-export interface RelayApi {
+/** The whole surface exposed to the renderer as `window.nodal`. No `keys.get` exists. */
+export interface NodalApi {
   providers: {
     list(): Promise<ProviderConfig[]>;
     save(config: ProviderConfigInput): Promise<{ providers: ProviderConfig[]; saved: ProviderConfig }>;
@@ -130,4 +130,4 @@ export interface RelayApi {
 }
 
 /** Errors thrown by handlers cross IPC as a JSON string prefixed with this tag. */
-export const IPC_ERROR_TAG = 'RELAY_ERR:';
+export const IPC_ERROR_TAG = 'NODAL_ERR:';

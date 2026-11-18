@@ -1,5 +1,5 @@
 import { _electron as electron, test } from '@playwright/test';
-import type { RelayApi } from '@shared/api';
+import type { NodalApi } from '@shared/api';
 // Not part of the normal test run: `npm run perf:ui` (bundle first). Seeds a
 // 5,000-message conversation and records scroll, typing and memory figures.
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
@@ -10,7 +10,7 @@ import { MOCK_KEY, startMockServer } from '../mock/server';
 
 declare global {
   interface Window {
-    relay: RelayApi;
+    nodal: NodalApi;
   }
 }
 
@@ -19,7 +19,7 @@ const N = 5000;
 test('measure a 5,000-message conversation', async () => {
   test.setTimeout(300_000);
   const mock = await startMockServer({ chunkDelayMs: 10 });
-  const userData = mkdtempSync(join(tmpdir(), 'relay-big-'));
+  const userData = mkdtempSync(join(tmpdir(), 'nodal-big-'));
   const words = 'the quick brown fox jumps over the lazy dog while a steady rain falls on the quiet harbor town'.split(' ');
   const body = (i: number) =>
     i % 7 === 3
@@ -46,7 +46,7 @@ test('measure a 5,000-message conversation', async () => {
   writeFileSync(
     file,
     JSON.stringify({
-      format: 'relay.conversation',
+      format: 'nodal.conversation',
       version: 1,
       providers: [{ id: providerId, kind: 'openai-compatible', displayName: 'Mock', baseUrl: mock.url, auth: { scheme: 'bearer' }, modelListPath: '/models', allowInsecureHttp: false }],
       conversations: [{ id: convId, title: 'Five thousand messages', providerId, modelId: 'mock-long', systemPrompt: null, params: {}, extensions: {}, activeLeafId: `m${N - 1}`, pinned: false, archived: false, createdAt: 1_790_000_000_000, updatedAt: 1_795_000_000_000 }],
@@ -54,7 +54,7 @@ test('measure a 5,000-message conversation', async () => {
     }),
   );
 
-  const app = await electron.launch({ args: appArgs(), env: { ...process.env, RELAY_USER_DATA: userData } as Record<string, string> });
+  const app = await electron.launch({ args: appArgs(), env: { ...process.env, NODAL_USER_DATA: userData } as Record<string, string> });
   const page = await app.firstWindow();
   await page.locator('h1').first().waitFor();
   await app.evaluate(({ dialog }, filePath) => {
@@ -63,9 +63,9 @@ test('measure a 5,000-message conversation', async () => {
 
   const out: Record<string, unknown> = { messages: N };
   let t = Date.now();
-  await page.evaluate(() => window.relay.data.importFile());
+  await page.evaluate(() => window.nodal.data.importFile());
   out.importMs = Date.now() - t;
-  await page.evaluate((key) => window.relay.keys.set('big-provider', key), MOCK_KEY);
+  await page.evaluate((key) => window.nodal.keys.set('big-provider', key), MOCK_KEY);
   await page.reload();
 
   // Open the conversation: time until the newest message is on screen.

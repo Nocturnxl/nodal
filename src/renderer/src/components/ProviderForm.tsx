@@ -2,7 +2,7 @@ import { CheckCircle2, Loader2 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { PRESETS } from '@shared/presets';
 import type { AuthScheme, KeyCheck, KeyStoreStatus, NormalizedError, ProviderConfig } from '@shared/types';
-import { parseIpcError, relay } from '../lib/ipc';
+import { parseIpcError, nodal } from '../lib/ipc';
 import { useStore } from '../store';
 import { Button, ErrorDetails, Label } from './ui';
 
@@ -67,7 +67,7 @@ export function ProviderForm({
     () => () => {
       const id = createdId.current;
       if (id && !kept.current) {
-        void relay.providers
+        void nodal.providers
           .delete(id)
           .then(() => useStore.getState().refreshProviders())
           .catch(() => {});
@@ -81,7 +81,7 @@ export function ProviderForm({
   };
 
   useEffect(() => {
-    void relay.keys.storeStatus().then(setStore);
+    void nodal.keys.storeStatus().then(setStore);
   }, []);
   useEffect(() => {
     setForm(initial);
@@ -104,10 +104,10 @@ export function ProviderForm({
     setFailed(null);
     setOk(null);
     try {
-      const { saved } = await relay.providers.save({ ...form, extraHeaders: textToHeaders(headersText) });
+      const { saved } = await nodal.providers.save({ ...form, extraHeaders: textToHeaders(headersText) });
       if (!form.id) createdId.current = saved.id;
       setForm((f) => ({ ...f, id: saved.id }));
-      const check: KeyCheck = needsKey && key.trim() ? await relay.keys.set(saved.id, key.trim(), saveAnyway) : await relay.providers.test(saved.id);
+      const check: KeyCheck = needsKey && key.trim() ? await nodal.keys.set(saved.id, key.trim(), saveAnyway) : await nodal.providers.test(saved.id);
       await refreshProviders();
       if (check.ok || (saveAnyway && check.saved)) {
         setKey('');

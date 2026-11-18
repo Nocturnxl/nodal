@@ -1,7 +1,7 @@
 import { ChevronLeft, ChevronRight, CornerDownRight, Pencil, RefreshCw } from 'lucide-react';
 import { memo, useEffect, useRef, useState } from 'react';
 import type { Message, NormalizedError } from '@shared/types';
-import { relay } from '../lib/ipc';
+import { nodal } from '../lib/ipc';
 import { formatTokens, textOf } from '../lib/tree';
 import { currentPath, useStore } from '../store';
 import { Markdown } from './Markdown';
@@ -14,7 +14,7 @@ export function AttachmentImage({ sha256, className }: { sha256: string; classNa
   useEffect(() => {
     if (blobCache.has(sha256)) return setUrl(blobCache.get(sha256));
     let alive = true;
-    void relay.attachments.get(sha256).then((res) => {
+    void nodal.attachments.get(sha256).then((res) => {
       if (!res) return;
       const u = URL.createObjectURL(new Blob([res.data as BlobPart], { type: res.mime }));
       blobCache.set(sha256, u);

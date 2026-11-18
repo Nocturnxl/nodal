@@ -18,7 +18,7 @@ export const PRESETS: Preset[] = [
     blurb: 'Private inference with web search and reasoning controls',
     needsKey: true,
     keyHelp:
-      'Create an INFERENCE key in Venice settings. Relay never needs an ADMIN key, which can manage other keys and billing.',
+      'Create an INFERENCE key in Venice settings. NODAL never needs an ADMIN key, which can manage other keys and billing.',
     config: {
       kind: 'openai-compatible',
       preset: 'venice',

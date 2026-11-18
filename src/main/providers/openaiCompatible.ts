@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import type { ChatEvent, ModelInfo } from '@shared/types';
-import { extractErrorMessage, normalizeHttpError, parseRateLimit, relayError, RelayError, requestIdFrom } from '../net/errors';
+import { extractErrorMessage, normalizeHttpError, parseRateLimit, nodalError, NodalError, requestIdFrom } from '../net/errors';
 import { buildAuthHeaders, joinUrl, readBody, readSse } from '../net/http';
 import type { ChatRequest, KeyCheckResult, ProviderAdapter, ProviderExtension, ProviderRuntime } from './adapter';
 import { ThinkTagParser } from './thinkParser';
@@ -118,13 +118,13 @@ export function createOpenAiCompatibleAdapter(ext: ProviderExtension = {}): Prov
       timeoutMs: p.timeouts.connectMs,
     });
     const text = await readBody(res, 30_000);
-    if (!res.ok) throw new RelayError(normalizeHttpError(res.status, text, res.headers, { requestIdHeaders: ext.requestIdHeaders }));
+    if (!res.ok) throw new NodalError(normalizeHttpError(res.status, text, res.headers, { requestIdHeaders: ext.requestIdHeaders }));
     let json: unknown;
     try {
       json = JSON.parse(text);
     } catch {
       const html = extractErrorMessage(text).html;
-      throw relayError('invalid_request', 'The model list was not valid JSON.', {
+      throw nodalError('invalid_request', 'The model list was not valid JSON.', {
         status: res.status,
         hint: html ? 'The base URL is probably wrong: it points at a website, not an API endpoint.' : undefined,
         requestId: requestIdFrom(res.headers, ext.requestIdHeaders),
@@ -132,7 +132,7 @@ export function createOpenAiCompatibleAdapter(ext: ProviderExtension = {}): Prov
     }
     const list = modelListSchema.safeParse(json);
     if (!list.success) {
-      throw relayError('invalid_request', 'The model list had an unexpected shape (expected { "data": [ { "id": ... } ] }).', { status: res.status });
+      throw nodalError('invalid_request', 'The model list had an unexpected shape (expected { "data": [ { "id": ... } ] }).', { status: res.status });
     }
     const models: ModelInfo[] = [];
     const seen = new Set<string>();
@@ -160,7 +160,7 @@ export function createOpenAiCompatibleAdapter(ext: ProviderExtension = {}): Prov
         const { models } = await fetchModels(p);
         return { ok: true, modelCount: models.length };
       } catch (e) {
-        const error = e instanceof RelayError ? e.normalized : relayError('internal', String(e)).normalized;
+        const error = e instanceof NodalError ? e.normalized : nodalError('internal', String(e)).normalized;
         const unverifiable = error.code === 'model_not_found' || (error.code === 'invalid_request' && error.status === 200);
         return { ok: false, error, unverifiable: unverifiable || undefined };
       }
@@ -210,7 +210,7 @@ export function createOpenAiCompatibleAdapter(ext: ProviderExtension = {}): Prov
         if ((res.status === 400 || res.status === 422) && adjustments < 4 && adaptBody(body, extractErrorMessage(text).message ?? text)) continue;
         const err = normalizeHttpError(res.status, text, res.headers, { requestIdHeaders: ext.requestIdHeaders, now });
         if (meta.balance) err.balance = meta.balance;
-        throw new RelayError(err);
+        throw new NodalError(err);
       }
       yield meta;
 
@@ -227,7 +227,7 @@ export function createOpenAiCompatibleAdapter(ext: ProviderExtension = {}): Prov
           // Some providers report failures inside a 200 stream.
           const { message, code } = extractErrorMessage(JSON.stringify({ error: chunk.error }));
           const status = asNumber(asRecord(chunk.error)?.code);
-          throw new RelayError(
+          throw new NodalError(
             status && status >= 400
               ? { ...normalizeHttpError(status, JSON.stringify({ error: chunk.error }), res.headers), requestId }
               : { code: /context/i.test(code ?? '') ? 'context_length' : 'server', message: message ?? 'The provider reported an error mid-stream.', requestId },
@@ -266,7 +266,7 @@ export function createOpenAiCompatibleAdapter(ext: ProviderExtension = {}): Prov
         try {
           json = JSON.parse(text);
         } catch {
-          throw relayError('server', 'The provider sent a response that was not valid JSON.', { requestId });
+          throw nodalError('server', 'The provider sent a response that was not valid JSON.', { requestId });
         }
         yield* handle(json);
         sawAnything = true;
@@ -291,9 +291,9 @@ export function createOpenAiCompatibleAdapter(ext: ProviderExtension = {}): Prov
       for (const piece of think.flush()) {
         yield piece.kind === 'text' ? { t: 'delta', text: piece.text } : { t: 'reasoning', text: piece.text };
       }
-      if (signal.aborted) throw relayError('cancelled', 'Cancelled');
+      if (signal.aborted) throw nodalError('cancelled', 'Cancelled');
       if (!sawDone && !finishReason) {
-        throw relayError(
+        throw nodalError(
           'network',
           sawAnything ? 'The connection closed before the reply finished.' : 'The server closed the connection without sending a reply.',
           { requestId },

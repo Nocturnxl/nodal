@@ -11,7 +11,7 @@ import { mkdirSync, writeFileSync } from 'node:fs';
 import { afterAll, describe, expect, it } from 'vitest';
 import type { ChatEvent, ModelInfo, NormalizedError, ProviderConfig } from '@shared/types';
 import { PRESETS } from '@shared/presets';
-import { RelayError } from '../../src/main/net/errors';
+import { NodalError } from '../../src/main/net/errors';
 import { buildAuthHeaders, DEFAULT_TIMEOUTS, Http, joinUrl } from '../../src/main/net/http';
 import { SseParser } from '../../src/main/net/sse';
 import type { ChatRequest, ProviderRuntime } from '../../src/main/providers/adapter';
@@ -31,7 +31,7 @@ const http = new Http(async (url, init) => {
     if (/^(x-ratelimit-|x-venice-|cf-ray$|retry-after$|x-request-id$|content-type$)/i.test(name)) seenHeaders[name] = /balance/i.test(name) ? '(present, value not recorded)' : value;
   });
   return res;
-}, 'Relay/live-smoke');
+}, 'NODAL/live-smoke');
 
 const rt = (apiKey: string | undefined): ProviderRuntime => ({ config, apiKey, http, timeouts: { ...DEFAULT_TIMEOUTS, firstByteMs: 120_000 } });
 
@@ -47,14 +47,14 @@ async function chat(modelId: string, model: ModelInfo | undefined, prompt: strin
   try {
     for await (const ev of adapter.streamChat(
       rt(KEY),
-      { modelId, model, messages: [{ role: 'user', content: prompt }], params: { maxTokens: 300 }, extensions: {}, conversationId: 'relay-live-smoke', ...over },
+      { modelId, model, messages: [{ role: 'user', content: prompt }], params: { maxTokens: 300 }, extensions: {}, conversationId: 'nodal-live-smoke', ...over },
       signal,
     )) {
       if ((ev.t === 'delta' || ev.t === 'reasoning') && firstTokenMs === undefined) firstTokenMs = Date.now() - started;
       events.push(ev);
     }
   } catch (e) {
-    if (!(e instanceof RelayError)) throw e;
+    if (!(e instanceof NodalError)) throw e;
     error = e.normalized;
   }
   const text = events.filter((e) => e.t === 'delta').map((e) => (e as { text: string }).text).join('');
@@ -204,7 +204,7 @@ describe.skipIf(!KEY)('Venice live', () => {
     try {
       for await (const ev of adapter.streamChat(
         rt(KEY),
-        { modelId: MODEL, model: models.find((x) => x.id === MODEL), messages: [{ role: 'user', content: 'Write the numbers from 1 to 3000, one per line, no commentary.' }], params: { maxTokens: 4000 }, extensions: { disable_thinking: true }, conversationId: 'relay-live-smoke' },
+        { modelId: MODEL, model: models.find((x) => x.id === MODEL), messages: [{ role: 'user', content: 'Write the numbers from 1 to 3000, one per line, no commentary.' }], params: { maxTokens: 4000 }, extensions: { disable_thinking: true }, conversationId: 'nodal-live-smoke' },
         ctl.signal,
       )) {
         events.push(ev);
@@ -214,7 +214,7 @@ describe.skipIf(!KEY)('Venice live', () => {
         }
       }
     } catch (e) {
-      if (!(e instanceof RelayError)) throw e;
+      if (!(e instanceof NodalError)) throw e;
       outcome = e.normalized.code;
     }
     const r = { error: outcome === 'finished before cancel' ? undefined : { code: outcome }, text: events.filter((e) => e.t === 'delta').map((e) => (e as { text: string }).text).join('') };
@@ -226,7 +226,7 @@ describe.skipIf(!KEY)('Venice live', () => {
 
   it('reports a wrong model id clearly', async (ctx) => {
     needAuth(ctx);
-    const r = await chat('relay-smoke-no-such-model', undefined, 'hi');
+    const r = await chat('nodal-smoke-no-such-model', undefined, 'hi');
     section('Unknown model', [`- ${j(r.error)}`]);
     expect(r.error).toBeDefined();
   });

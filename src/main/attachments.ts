@@ -2,7 +2,7 @@ import { createHash } from 'node:crypto';
 import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import type { AttachmentRef } from '@shared/types';
-import { relayError } from './net/errors';
+import { nodalError } from './net/errors';
 
 const SIGNATURES: Record<string, (b: Uint8Array) => boolean> = {
   'image/png': (b) => b[0] === 0x89 && b[1] === 0x50 && b[2] === 0x4e && b[3] === 0x47,
@@ -17,7 +17,7 @@ export class AttachmentStore {
 
   add(mime: string, data: Uint8Array): AttachmentRef {
     const check = SIGNATURES[mime];
-    if (!check || !check(data)) throw relayError('invalid_request', 'That file is not a valid PNG, JPEG, GIF or WebP image.');
+    if (!check || !check(data)) throw nodalError('invalid_request', 'That file is not a valid PNG, JPEG, GIF or WebP image.');
     const sha256 = createHash('sha256').update(data).digest('hex');
     mkdirSync(this.dir, { recursive: true });
     const file = join(this.dir, sha256);

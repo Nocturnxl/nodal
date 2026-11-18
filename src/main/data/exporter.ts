@@ -5,7 +5,7 @@ import { providerConfigSchema, settingsPatchSchema } from '@shared/schemas';
 import type { AttachmentStore } from '../attachments';
 import type { Store } from '../db/store';
 import { textOf } from '../db/store';
-import { relayError } from '../net/errors';
+import { nodalError } from '../net/errors';
 import { checkBaseUrl } from '../net/http';
 
 // Exports never contain keys: provider configs carry no key material by design.
@@ -49,7 +49,7 @@ const messageSchema = z.object({
 const providerSchema = providerConfigSchema.extend({ id: z.string().min(1).max(200) });
 
 const exportSchema = z.object({
-  format: z.enum(['relay.export', 'relay.conversation']),
+  format: z.enum(['nodal.export', 'nodal.conversation']),
   version: z.literal(1),
   providers: z.array(providerSchema).default([]),
   conversations: z.array(conversationSchema).default([]),
@@ -65,7 +65,7 @@ export function exportConversationJson(store: Store, id: string): string {
   const conversation = store.requireConversation(id);
   const provider = store.getProvider(conversation.providerId);
   const data = {
-    format: 'relay.conversation',
+    format: 'nodal.conversation',
     version: 1,
     exportedAt: new Date().toISOString(),
     providers: provider ? [provider] : [],
@@ -101,12 +101,12 @@ export function exportConversationMarkdown(store: Store, id: string): string {
   return lines.join('\n');
 }
 
-/** Full export: a ZIP holding relay-export.json and the attachment files. */
+/** Full export: a ZIP holding nodal-export.json and the attachment files. */
 export function exportAllZip(store: Store, attachments: AttachmentStore): Uint8Array {
   const conversations = store.listConversations({ includeArchived: true });
   const messages = conversations.flatMap((c) => store.listMessages(c.id));
   const data = {
-    format: 'relay.export',
+    format: 'nodal.export',
     version: 1,
     exportedAt: new Date().toISOString(),
     providers: store.listProviders(),
@@ -115,7 +115,7 @@ export function exportAllZip(store: Store, attachments: AttachmentStore): Uint8A
     settings: store.storedSettings(),
     modelOverrides: store.listModelOverrides(),
   };
-  const files: Record<string, Uint8Array> = { 'relay-export.json': strToU8(JSON.stringify(data, null, 2)) };
+  const files: Record<string, Uint8Array> = { 'nodal-export.json': strToU8(JSON.stringify(data, null, 2)) };
   const seen = new Set<string>();
   for (const m of messages) {
     for (const p of m.content) {
@@ -138,10 +138,10 @@ export function importBytes(store: Store, attachments: AttachmentStore, bytes: U
     try {
       entries = unzipSync(bytes);
     } catch {
-      throw relayError('invalid_request', 'That ZIP file could not be read.');
+      throw nodalError('invalid_request', 'That ZIP file could not be read.');
     }
-    const main = entries['relay-export.json'];
-    if (!main) throw relayError('invalid_request', 'That ZIP is not a Relay export (relay-export.json is missing).');
+    const main = entries['nodal-export.json'];
+    if (!main) throw nodalError('invalid_request', 'That ZIP is not a NODAL export (nodal-export.json is missing).');
     jsonText = strFromU8(main);
     for (const [name, data] of Object.entries(entries)) {
       const m = /^attachments\/([a-f0-9]{64})$/.exec(name);
@@ -156,7 +156,7 @@ export function importBytes(store: Store, attachments: AttachmentStore, bytes: U
     parsed = exportSchema.parse(JSON.parse(jsonText));
   } catch (e) {
     const detail = e instanceof z.ZodError ? e.issues[0]?.path.join('.') + ': ' + e.issues[0]?.message : 'not valid JSON';
-    throw relayError('invalid_request', `That file is not a Relay export (${detail}).`);
+    throw nodalError('invalid_request', `That file is not a NODAL export (${detail}).`);
   }
 
   const result: ImportResult = { conversations: 0, messages: 0, providers: 0, skipped: 0 };

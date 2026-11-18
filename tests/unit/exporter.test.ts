@@ -52,8 +52,8 @@ describe('export', () => {
     expect(JSON.parse(json).messages).toHaveLength(4); // every branch
     const zip = exportAllZip(t.store, t.attachments);
     const files = unzipSync(zip);
-    expect(Object.keys(files).sort()).toEqual([`attachments/${t.img.sha256}`, 'relay-export.json']);
-    expect(strFromU8(files['relay-export.json'])).not.toContain(MOCK_KEY);
+    expect(Object.keys(files).sort()).toEqual([`attachments/${t.img.sha256}`, 'nodal-export.json']);
+    expect(strFromU8(files['nodal-export.json'])).not.toContain(MOCK_KEY);
     expect(Buffer.from(zip).includes(MOCK_KEY)).toBe(false);
   });
 });
@@ -92,13 +92,13 @@ describe('import', () => {
     expect(dst.store.pathTo(dst.store.getConversation(src.conv.id)!.activeLeafId).map((m) => m.id)).toEqual([src.edit.userMessage!.id, src.edit.assistantMessage.id]);
   });
 
-  it('rejects files that are not Relay exports and never lets a file allow LAN HTTP or a remote HTTP endpoint', () => {
+  it('rejects files that are not NODAL exports and never lets a file allow LAN HTTP or a remote HTTP endpoint', () => {
     const dst = makeEnv('http://127.0.0.1:1/v1');
     const enc = (o: unknown) => new TextEncoder().encode(JSON.stringify(o));
-    expect(() => importBytes(dst.store, dst.attachments, enc({ hello: 'world' }))).toThrow(/not a Relay export/);
-    expect(() => importBytes(dst.store, dst.attachments, new TextEncoder().encode('not json'))).toThrow(/not a Relay export/);
+    expect(() => importBytes(dst.store, dst.attachments, enc({ hello: 'world' }))).toThrow(/not a NODAL export/);
+    expect(() => importBytes(dst.store, dst.attachments, new TextEncoder().encode('not json'))).toThrow(/not a NODAL export/);
     const provider = (id: string, baseUrl: string) => ({ id, kind: 'openai-compatible', displayName: id, baseUrl, auth: { scheme: 'bearer' }, modelListPath: '/models', allowInsecureHttp: true });
-    const res = importBytes(dst.store, dst.attachments, enc({ format: 'relay.export', version: 1, providers: [provider('lan', 'http://192.168.1.9:1234/v1'), provider('evil', 'http://example.com/v1')] }));
+    const res = importBytes(dst.store, dst.attachments, enc({ format: 'nodal.export', version: 1, providers: [provider('lan', 'http://192.168.1.9:1234/v1'), provider('evil', 'http://example.com/v1')] }));
     expect(res).toMatchObject({ providers: 1, skipped: 1 });
     expect(dst.store.getProvider('lan')?.allowInsecureHttp).toBe(false);
     expect(dst.store.getProvider('evil')).toBeUndefined();

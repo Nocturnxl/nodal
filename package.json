@@ -1,11 +1,11 @@
 {
-  "name": "relay",
-  "productName": "Relay",
+  "name": "nodal",
+  "productName": "NODAL",
   "version": "0.1.0",
   "description": "Local, provider-agnostic LLM chat client",
   "private": true,
   "main": "./out/main/index.js",
-  "author": "Relay",
+  "author": "NODAL",
   "license": "UNLICENSED",
   "scripts": {
     "dev": "electron-vite dev",
@@ -13,6 +13,7 @@
     "lint": "eslint src tests",
     "test": "vitest run",
     "test:watch": "vitest",
+    "brand": "node scripts/make-brand-assets.mjs",
     "notices": "node scripts/third-party-notices.mjs",
     "verify:package": "node scripts/verify-package.mjs",
     "perf:db": "vitest run --config vitest.perf.config.mts",

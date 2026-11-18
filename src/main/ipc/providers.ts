@@ -1,7 +1,7 @@
 import { CH } from '@shared/api';
 import { schemas } from '@shared/schemas';
 import type { KeyCheck, ProviderConfig } from '@shared/types';
-import { relayError } from '../net/errors';
+import { nodalError } from '../net/errors';
 import { checkBaseUrl } from '../net/http';
 import { handle, type AppContext } from './register';
 
@@ -14,13 +14,13 @@ export function registerProviderIpc(ctx: AppContext): void {
     const baseUrl = input.baseUrl.replace(/\/+$/, '');
     const verdict = checkBaseUrl(baseUrl, input.allowInsecureHttp);
     if (!verdict.ok) {
-      throw relayError('blocked', verdict.reason ?? 'That base URL is not allowed.', {
+      throw nodalError('blocked', verdict.reason ?? 'That base URL is not allowed.', {
         hint: verdict.needsInsecureConfirm ? 'insecure-lan' : undefined,
       });
     }
-    if (input.auth.scheme === 'header' && !input.auth.headerName) throw relayError('invalid_request', 'Enter the header name that carries the key.');
+    if (input.auth.scheme === 'header' && !input.auth.headerName) throw nodalError('invalid_request', 'Enter the header name that carries the key.');
     const existing = input.id ? store.getProvider(input.id) : undefined;
-    if (input.id && !existing) throw relayError('invalid_request', 'That provider no longer exists.');
+    if (input.id && !existing) throw nodalError('invalid_request', 'That provider no longer exists.');
     // A stored key was entered for one host. Pointing the provider at a
     // different host must not silently send that key there.
     if (existing && new URL(existing.baseUrl).host !== verdict.url!.host) keys.clear(existing.id);
@@ -50,9 +50,9 @@ export function registerProviderIpc(ctx: AppContext): void {
 
   handle(ctx, CH.keysSet, schemas.keysSet, async ({ providerId, key, saveAnyway }): Promise<KeyCheck> => {
     const provider = store.getProvider(providerId);
-    if (!provider) throw relayError('invalid_request', 'That provider no longer exists.');
+    if (!provider) throw nodalError('invalid_request', 'That provider no longer exists.');
     const trimmed = key.trim();
-    if (!trimmed) throw relayError('invalid_request', 'Enter an API key.');
+    if (!trimmed) throw nodalError('invalid_request', 'Enter an API key.');
     const status = keys.storeStatus();
     if (!status.available) return { ok: false, saved: false, error: { code: 'blocked', message: status.reason ?? 'Key storage is unavailable.' } };
 
@@ -74,7 +74,7 @@ export function registerProviderIpc(ctx: AppContext): void {
   handle(ctx, CH.modelsList, schemas.modelsList, ({ providerId, refresh }) => models.list(providerId, refresh));
 
   handle(ctx, CH.modelsAddManual, schemas.modelsAddManual, ({ providerId, modelId }) => {
-    if (!store.getProvider(providerId)) throw relayError('invalid_request', 'That provider no longer exists.');
+    if (!store.getProvider(providerId)) throw nodalError('invalid_request', 'That provider no longer exists.');
     store.addManualModel(providerId, modelId);
     return models.cached(providerId);
   });

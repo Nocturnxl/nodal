@@ -4,7 +4,7 @@ import { CH } from '@shared/api';
 import { schemas } from '@shared/schemas';
 import type { AppInfo, Settings } from '@shared/types';
 import { exportAllZip, exportConversationJson, exportConversationMarkdown, importBytes } from '../data/exporter';
-import { relayError } from '../net/errors';
+import { nodalError } from '../net/errors';
 import { handle, type AppContext } from './register';
 
 function safeName(title: string): string {
@@ -40,7 +40,7 @@ export function registerDataIpc(ctx: AppContext): void {
     const win = ctx.window();
     const options = {
       title: 'Export everything',
-      defaultPath: `relay-export-${new Date().toISOString().slice(0, 10)}.zip`,
+      defaultPath: `nodal-export-${new Date().toISOString().slice(0, 10)}.zip`,
       filters: [{ name: 'ZIP archive', extensions: ['zip'] }],
     };
     const res = win ? await dialog.showSaveDialog(win, options) : await dialog.showSaveDialog(options);
@@ -54,12 +54,12 @@ export function registerDataIpc(ctx: AppContext): void {
     const options = {
       title: 'Import',
       properties: ['openFile' as const],
-      filters: [{ name: 'Relay export', extensions: ['zip', 'json'] }],
+      filters: [{ name: 'NODAL export', extensions: ['zip', 'json'] }],
     };
     const res = win ? await dialog.showOpenDialog(win, options) : await dialog.showOpenDialog(options);
     const file = res.filePaths[0];
     if (res.canceled || !file) return null;
-    if (statSync(file).size > 1024 * 1024 * 1024) throw relayError('invalid_request', 'That file is too large to import.');
+    if (statSync(file).size > 1024 * 1024 * 1024) throw nodalError('invalid_request', 'That file is too large to import.');
     return importBytes(store, attachments, new Uint8Array(readFileSync(file)));
   });
 
@@ -96,10 +96,10 @@ export function registerDataIpc(ctx: AppContext): void {
     try {
       parsed = new URL(url);
     } catch {
-      throw relayError('invalid_request', 'That link is not a valid URL.');
+      throw nodalError('invalid_request', 'That link is not a valid URL.');
     }
     if (parsed.protocol !== 'https:' && parsed.protocol !== 'http:') {
-      throw relayError('blocked', `Relay only opens http and https links, not "${parsed.protocol}".`);
+      throw nodalError('blocked', `NODAL only opens http and https links, not "${parsed.protocol}".`);
     }
     const win = ctx.window();
     const options = {

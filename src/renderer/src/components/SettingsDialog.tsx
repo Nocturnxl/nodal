@@ -3,11 +3,11 @@ import { Dialog } from 'radix-ui';
 import { useEffect, useState } from 'react';
 import type { Preset } from '@shared/presets';
 import type { AppInfo, KeyCheck, ProviderConfig } from '@shared/types';
-import { parseIpcError, relay } from '../lib/ipc';
+import { parseIpcError, nodal } from '../lib/ipc';
 import { relativeTime } from '../lib/tree';
 import { useStore, type SettingsSection } from '../store';
 import { ProviderForm } from './ProviderForm';
-import { Badge, Button, ErrorDetails, IconButton, Label, Segmented, Switch, cx } from './ui';
+import { Badge, Button, ErrorDetails, IconButton, Label, Logo, Segmented, Switch, cx } from './ui';
 import { PresetList } from './Welcome';
 
 const SECTIONS: { id: SettingsSection; label: string }[] = [
@@ -49,7 +49,7 @@ function ProviderEditor({ provider, onDeleted }: { provider: ProviderConfig; onD
   useEffect(() => {
     setTest(null);
     setConfirmDelete(false);
-    void relay.providers.usage(provider.id).then((u) => setUsage(u.conversations));
+    void nodal.providers.usage(provider.id).then((u) => setUsage(u.conversations));
     // Opening a provider refreshes its model list.
     void loadModels(provider.id, true);
   }, [provider.id, loadModels]);
@@ -74,7 +74,7 @@ function ProviderEditor({ provider, onDeleted }: { provider: ProviderConfig; onD
 
       <div className="rounded-lg border border-line p-3">
         <div className="flex flex-wrap items-center gap-2">
-          <Button size="sm" disabled={!!busy} onClick={() => run('test', async () => setTest(await relay.providers.test(provider.id)))}>
+          <Button size="sm" disabled={!!busy} onClick={() => run('test', async () => setTest(await nodal.providers.test(provider.id)))}>
             {busy === 'test' ? 'Testing…' : 'Test connection'}
           </Button>
           <Button size="sm" disabled={!!busy} onClick={() => run('refresh', async () => void (await loadModels(provider.id, true)))}>
@@ -86,7 +86,7 @@ function ProviderEditor({ provider, onDeleted }: { provider: ProviderConfig; onD
               disabled={!!busy}
               onClick={() =>
                 run('clear', async () => {
-                  await relay.keys.clear(provider.id);
+                  await nodal.keys.clear(provider.id);
                   await refreshProviders();
                 })
               }
@@ -147,7 +147,7 @@ function ProviderEditor({ provider, onDeleted }: { provider: ProviderConfig; onD
                   onClick={() =>
                     run('reassign', async () => {
                       const [pid, mid] = target.split('\n');
-                      await relay.providers.reassign(provider.id, pid, mid);
+                      await nodal.providers.reassign(provider.id, pid, mid);
                       setUsage(0);
                       await refreshConversations();
                       const cur = useStore.getState().currentId;
@@ -180,7 +180,7 @@ function ProviderEditor({ provider, onDeleted }: { provider: ProviderConfig; onD
                 disabled={!!busy}
                 onClick={() =>
                   run('delete', async () => {
-                    await relay.providers.delete(provider.id);
+                    await nodal.providers.delete(provider.id);
                     await refreshProviders();
                     onDeleted();
                   })
@@ -327,7 +327,7 @@ function Data() {
               disabled={!currentId}
               onClick={() =>
                 guard(async () => {
-                  const path = await relay.data.exportConversation(currentId!, f);
+                  const path = await nodal.data.exportConversation(currentId!, f);
                   if (path) toast({ kind: 'success', title: `Exported to ${path}` });
                 })
               }
@@ -341,7 +341,7 @@ function Data() {
         <Button
           onClick={() =>
             guard(async () => {
-              const path = await relay.data.exportAll();
+              const path = await nodal.data.exportAll();
               if (path) toast({ kind: 'success', title: `Exported to ${path}` });
             })
           }
@@ -349,11 +349,11 @@ function Data() {
           Export ZIP
         </Button>
       </Row>
-      <Row title="Import" hint="Merges a Relay ZIP or JSON export. Items that already exist are skipped.">
+      <Row title="Import" hint="Merges a NODAL ZIP or JSON export. Items that already exist are skipped.">
         <Button
           onClick={() =>
             guard(async () => {
-              const r = await relay.data.importFile();
+              const r = await nodal.data.importFile();
               if (!r) return;
               await refresh();
               toast({
@@ -367,7 +367,7 @@ function Data() {
         </Button>
       </Row>
       <Row title="Data folder" hint="The database, encrypted key file, attachments, backups and logs.">
-        <Button onClick={() => void relay.app.openDataFolder()}>Open folder</Button>
+        <Button onClick={() => void nodal.app.openDataFolder()}>Open folder</Button>
       </Row>
     </div>
   );
@@ -401,7 +401,7 @@ function Network() {
         />
       </Row>
       <p className="pt-4 text-[12.5px] text-muted">
-        Relay only connects to the providers you configure. Plaintext HTTP is allowed for this computer, and for LAN addresses only after you confirm it per provider. There is no telemetry, analytics or crash
+        NODAL only connects to the providers you configure. Plaintext HTTP is allowed for this computer, and for LAN addresses only after you confirm it per provider. There is no telemetry, analytics or crash
         upload.
       </p>
     </div>
@@ -412,14 +412,15 @@ function About() {
   const [info, setInfo] = useState<AppInfo | null>(null);
   const [err, setErr] = useState<string | null>(null);
   useEffect(() => {
-    relay.app.info().then(setInfo, (e) => setErr(parseIpcError(e).message));
+    nodal.app.info().then(setInfo, (e) => setErr(parseIpcError(e).message));
   }, []);
   if (err) return <div className="p-5 text-danger">{err}</div>;
   if (!info) return null;
   return (
     <div className="p-5">
+      <Logo size={40} className="mb-4" />
       <div className="text-[20px] font-semibold">
-        Relay <span className="text-[13px] font-normal text-muted">{info.version}</span> {!info.packaged && <Badge tone="warn">development build</Badge>}
+        NODAL <span className="text-[13px] font-normal text-muted">{info.version}</span> {!info.packaged && <Badge tone="warn">development build</Badge>}
       </div>
       <p className="mt-1 text-muted">A local, provider-agnostic chat client. No accounts, sync or telemetry.</p>
       <dl className="mt-4 grid grid-cols-[auto_1fr] gap-x-6 gap-y-1 text-[13px]">
@@ -437,8 +438,8 @@ function About() {
         <dd className="font-mono text-[12px] break-all">{info.logPath}</dd>
       </dl>
       <div className="mt-4 flex gap-2">
-        <Button onClick={() => void relay.app.openLogFolder()}>Open log folder</Button>
-        <Button onClick={() => void relay.app.openDataFolder()}>Open data folder</Button>
+        <Button onClick={() => void nodal.app.openLogFolder()}>Open log folder</Button>
+        <Button onClick={() => void nodal.app.openDataFolder()}>Open data folder</Button>
       </div>
       <p className="mt-4 text-[12.5px] text-muted">Logs hold metadata only: time, provider, model, status, request ID and token counts. Message text is never logged.</p>
     </div>

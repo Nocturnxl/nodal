@@ -1,7 +1,7 @@
 import { CH } from '@shared/api';
 import { schemas } from '@shared/schemas';
 import type { ChatStartRequest, ConversationDetail } from '@shared/types';
-import { relayError } from '../net/errors';
+import { nodalError } from '../net/errors';
 import { handle, type AppContext } from './register';
 
 export function registerChatIpc(ctx: AppContext): void {
@@ -21,13 +21,13 @@ export function registerChatIpc(ctx: AppContext): void {
 
   handle(ctx, CH.convUpdate, schemas.convUpdate, ({ id, patch }) => {
     if ((patch.activeLeafId !== undefined || patch.providerId || patch.modelId) && streams.isStreaming(id)) {
-      throw relayError('busy', 'Wait for the reply to finish, or stop it, before changing this.');
+      throw nodalError('busy', 'Wait for the reply to finish, or stop it, before changing this.');
     }
     return store.updateConversation(id, patch);
   });
 
   handle(ctx, CH.convDelete, schemas.convId, ({ id }) => {
-    if (streams.isStreaming(id)) throw relayError('busy', 'Stop the reply before deleting this conversation.');
+    if (streams.isStreaming(id)) throw nodalError('busy', 'Stop the reply before deleting this conversation.');
     // Deleting a chat also deletes its images, unless another chat uses the same file.
     for (const sha of store.deleteConversation(id)) ctx.attachments.remove(sha);
   });

@@ -1,8 +1,8 @@
-# Relay
+# NODAL
 
 A single-user desktop chat client for any OpenAI-compatible LLM endpoint. You give it a base URL and an API key, it discovers the models that endpoint serves, and you chat with streamed replies. Nothing leaves the machine except the requests you send to the provider you choose.
 
-"Relay" is a placeholder name. The icon is `build/icon.png`.
+The icon and in-app logo are generated from the artwork in `assets/brand/source` by `npm run brand`.
 
 ## Quick start
 
@@ -52,7 +52,7 @@ src/
     db/                 SQLite connection, numbered SQL migrations, all queries
     secrets/keystore.ts safeStorage wrapper over keys.json
     data/exporter.ts    Markdown / JSON / ZIP export and merge import
-  preload/index.ts      contextBridge surface `window.relay`: typed functions on fixed channels
+  preload/index.ts      contextBridge surface `window.nodal`: typed functions on fixed channels
   renderer/             React UI (Zustand, Radix, Tailwind); makes no network requests
   shared/               types, zod schemas, presets, the IPC contract
 tests/
@@ -67,9 +67,9 @@ A provider is data plus a thin adapter. Venice, OpenRouter, OpenAI, LM Studio, O
 ## Security model
 
 - **The renderer never sees a key.** There is no `keys.get` channel. `keys.status` returns only presence and the last four characters.
-- Keys are encrypted with Electron `safeStorage` (DPAPI, Keychain, libsecret or kwallet) and stored as ciphertext in `keys.json`. On Linux, if only the `basic_text` backend is available, Relay refuses to store keys and says why.
+- Keys are encrypted with Electron `safeStorage` (DPAPI, Keychain, libsecret or kwallet) and stored as ciphertext in `keys.json`. On Linux, if only the `basic_text` backend is available, NODAL refuses to store keys and says why.
 - Changing a provider's host deletes its stored key, so a key is never sent to a server it was not entered for.
-- The window runs with `contextIsolation`, `sandbox`, no Node integration, and a strict CSP (`connect-src 'none'`). A `webRequest` filter cancels any renderer request outside the app's own `app://relay` origin. Navigation, new windows and webviews are denied.
+- The window runs with `contextIsolation`, `sandbox`, no Node integration, and a strict CSP (`connect-src 'none'`). A `webRequest` filter cancels any renderer request outside the app's own `app://nodal` origin. Navigation, new windows and webviews are denied.
 - Provider traffic goes through a separate in-memory session with an egress allowlist of configured provider hosts. HTTPS is required. Plain HTTP is allowed for loopback, and for LAN addresses only after a per-provider confirmation.
 - Model output is untrusted: Markdown renders without raw HTML, links open in the system browser only after a native dialog shows the full URL, and only `http(s)` links are accepted.
 - Packaged builds set these fuses: `RunAsNode` off, `EnableNodeOptionsEnvironmentVariable` off, `EnableNodeCliInspectArguments` off, `OnlyLoadAppFromAsar` on, `EnableEmbeddedAsarIntegrityValidation` on.
@@ -79,19 +79,19 @@ A provider is data plus a thin adapter. Venice, OpenRouter, OpenAI, LM Studio, O
 
 ## Where data lives
 
-Everything is in the Electron user-data folder (Settings → Data → Open folder). On Windows that is `%APPDATA%\Relay`.
+Everything is in the Electron user-data folder (Settings → Data → Open folder). On Windows that is `%APPDATA%\NODAL`.
 
 | Path | Contents |
 | --- | --- |
-| `relay.db` | SQLite (WAL): providers, conversations, the message tree, settings, model cache, request log |
+| `nodal.db` | SQLite (WAL): providers, conversations, the message tree, settings, model cache, request log |
 | `keys.json` | `safeStorage` ciphertext, one entry per provider |
 | `attachments/<sha256>` | Attached images, deduplicated by content hash |
 | `logs/` | Rotating metadata-only logs, 5 files of 2 MB |
-| `backups/` | Copy of `relay.db` taken before each schema migration |
+| `backups/` | Copy of `nodal.db` taken before each schema migration |
 
-Set `RELAY_USER_DATA` to run against a different folder. The tests use this.
+Set `NODAL_USER_DATA` to run against a different folder. The tests use this.
 
-On Linux, `RELAY_PASSWORD_STORE` (`gnome-libsecret`, `kwallet`, `kwallet5` or `kwallet6`) names the keyring to use when the desktop session is one Chromium does not recognise. It cannot select plain-text storage.
+On Linux, `NODAL_PASSWORD_STORE` (`gnome-libsecret`, `kwallet`, `kwallet5` or `kwallet6`) names the keyring to use when the desktop session is one Chromium does not recognise. It cannot select plain-text storage.
 
 ## What is implemented
 
@@ -115,13 +115,13 @@ Not implemented (P2 in the specification): model-generated titles (F17; titles c
 
 Confirmed against the live API on 2026-11-17 with `npm run smoke:venice` (a live smoke test that needs `VENICE_API_KEY` in the environment and is not part of `npm test`):
 
-- `GET /models` is public, so key validation calls `GET /api_keys/rate_limits`: 200 for a valid key, 401 for an invalid one, 402 (a payment challenge) with no credentials. Relay reports that 402 as an authentication failure.
+- `GET /models` is public, so key validation calls `GET /api_keys/rate_limits`: 200 for a valid key, 401 for an invalid one, 402 (a payment challenge) with no credentials. NODAL reports that 402 as an authentication failure.
 - Streaming works with `venice_parameters` and `stream_options.include_usage`. Usage arrives in a final chunk with an empty `choices` array.
 - Reasoning text arrives in `delta.reasoning_content` (seen on `deepseek-v4-1-flash-1017`).
 - `x-ratelimit-reset-requests` and `x-ratelimit-reset-tokens` are epoch milliseconds.
 - `CF-RAY` is the request ID, and `x-venice-balance-usd` carries the balance.
 - `model_spec.pricing.*.usd` is USD per million tokens.
-- With `include_venice_system_prompt` on, a one-line prompt was billed as about 1,700 prompt tokens. Relay therefore sends it as off by default (the specification had it on); turn it on per conversation in the inspector's Model options.
+- With `include_venice_system_prompt` on, a one-line prompt was billed as about 1,700 prompt tokens. NODAL therefore sends it as off by default (the specification had it on); turn it on per conversation in the inspector's Model options.
 
 Not seen yet: inline `<think>` tags from a real model, the deprecation headers, and a real 429.
 
@@ -129,7 +129,7 @@ Not seen yet: inline `<think>` tags from a real model, the deprecation headers, 
 
 - **OpenRouter.** `GET /models` is public, so the key is validated with `GET /key` (401 for a bad key). The model list mapping is tested against a recorded live response. No chat has been run against it.
 - **OpenAI, LM Studio, Ollama.** Base URLs and auth match their docs, but none has been run. OpenAI's `GET /models` returns 401 without a key, so the generic check validates keys there.
-- **Field differences.** If a server rejects `stream_options`, `max_tokens`, `temperature` or `top_p` by name with a 400, Relay drops or renames that field (`max_tokens` becomes `max_completion_tokens`) and retries before any output. This is tested against the mock only.
+- **Field differences.** If a server rejects `stream_options`, `max_tokens`, `temperature` or `top_p` by name with a 400, NODAL drops or renames that field (`max_tokens` becomes `max_completion_tokens`) and retries before any output. This is tested against the mock only.
 
 ## Before a public release
 
@@ -139,7 +139,7 @@ Still open, and not something the code can settle on its own:
 
 - **Signing and notarization.** Builds are unsigned. Windows needs a code-signing certificate; macOS needs an Apple Developer ID.
 - **An update feed.** `publish` is `null` in `electron-builder.yml`.
-- **Name and licence.** "Relay" is a placeholder, and `package.json` says `UNLICENSED`.
+- **Licence.** `package.json` says `UNLICENSED`.
 - **macOS and Linux.** Never built or run. The CI workflow covers both but has not executed.
 - **Real providers other than Venice**, and the app's own screens against Venice (only the adapter was tested live).
 - **A screen-reader pass.** The automated scan finds missing labels and low contrast, not whether the app is pleasant to use without sight.

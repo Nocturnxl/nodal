@@ -17,7 +17,7 @@ import { DEFAULT_TIMEOUTS, Http, type Timeouts } from './net/http';
 import { KeyStore } from './secrets/keystore';
 import { maybeCheckForUpdates } from './updater';
 
-const APP_ORIGIN = 'app://relay';
+const APP_ORIGIN = 'app://nodal';
 const DEV_URL = !app.isPackaged ? process.env.ELECTRON_RENDERER_URL : undefined;
 const DEV_ORIGIN = DEV_URL ? new URL(DEV_URL).origin : undefined;
 
@@ -39,18 +39,18 @@ const MIME: Record<string, string> = {
   '.map': 'application/json',
 };
 
-// The app's pages are served from app://relay, a real origin that CSP 'self'
+// The app's pages are served from app://nodal, a real origin that CSP 'self'
 // and the IPC sender check can both reason about.
 protocol.registerSchemesAsPrivileged([{ scheme: 'app', privileges: { standard: true, secure: true, supportFetchAPI: true } }]);
 
 // Test runs point the app at a throwaway profile.
-if (process.env.RELAY_USER_DATA) app.setPath('userData', process.env.RELAY_USER_DATA);
+if (process.env.NODAL_USER_DATA) app.setPath('userData', process.env.NODAL_USER_DATA);
 
 // Linux only: name the key-storage backend explicitly. Test drivers launch
-// Chromium with --password-store=basic, which would make Relay refuse to store
+// Chromium with --password-store=basic, which would make NODAL refuse to store
 // keys; a desktop session Chromium does not recognise has the same effect.
 // Only real keyrings can be named here, so this can never weaken storage.
-const store = process.env.RELAY_PASSWORD_STORE;
+const store = process.env.NODAL_PASSWORD_STORE;
 if (process.platform === 'linux' && store && ['gnome-libsecret', 'kwallet', 'kwallet5', 'kwallet6'].includes(store)) {
   app.commandLine.appendSwitch('password-store', store);
 }
@@ -62,7 +62,7 @@ function serveApp(): void {
   const root = normalize(join(__dirname, '../renderer'));
   protocol.handle('app', async (request) => {
     const url = new URL(request.url);
-    if (url.host !== 'relay') return new Response('Not found', { status: 404 });
+    if (url.host !== 'nodal') return new Response('Not found', { status: 404 });
     const rel = decodeURIComponent(url.pathname === '/' ? '/index.html' : url.pathname);
     const file = normalize(join(root, rel));
     if (!file.startsWith(root + sep)) return new Response('Forbidden', { status: 403 });
@@ -139,7 +139,7 @@ function createWindow(): void {
     minWidth: 860,
     minHeight: 560,
     show: false,
-    title: 'Relay',
+    title: 'NODAL',
     // Window and taskbar icon on Windows and Linux; macOS takes it from the app bundle.
     icon: app.isPackaged ? join(process.resourcesPath, 'icon.png') : join(__dirname, '../../build/icon.png'),
     autoHideMenuBar: true,
@@ -172,7 +172,7 @@ function start(): void {
   } catch (e) {
     const message = e instanceof MigrationError ? e.message : `The database could not be opened: ${e instanceof Error ? e.message : String(e)}`;
     log.error('database open failed', { message });
-    dialog.showErrorBox('Relay cannot start', message);
+    dialog.showErrorBox('NODAL cannot start', message);
     app.exit(1);
     return;
   }
@@ -183,9 +183,9 @@ function start(): void {
     log.error('uncaught exception', { message: e?.message, stack: e?.stack?.split(/\r?\n/).slice(0, 8).join(' | ') });
     if (crashing) return;
     crashing = true;
-    dialog.showErrorBox('Relay hit an unexpected error', `${e?.message ?? e}
+    dialog.showErrorBox('NODAL hit an unexpected error', `${e?.message ?? e}
 
-Relay will close. Your conversations are saved.
+NODAL will close. Your conversations are saved.
 Details are in the log folder:
 ${logs}`);
     app.quit();
@@ -198,7 +198,7 @@ ${logs}`);
     if (details.reason === 'clean-exit' || !mainWindow || mainWindow.isDestroyed() || contents !== mainWindow.webContents) return;
     const choice = dialog.showMessageBoxSync(mainWindow, {
       type: 'error',
-      title: 'Relay',
+      title: 'NODAL',
       message: 'The window stopped responding and was closed.',
       detail: 'Your conversations are saved. Reload to carry on.',
       buttons: ['Reload', 'Quit'],
@@ -224,7 +224,7 @@ ${logs}`);
   // Provider traffic uses its own in-memory session: no cookies or cache on
   // disk, the system proxy and certificate store, and an egress allowlist of
   // configured provider hosts.
-  const netSession = session.fromPartition('relay-net', { cache: false });
+  const netSession = session.fromPartition('nodal-net', { cache: false });
   netSession.webRequest.onBeforeRequest((details, callback) => {
     let allowed = false;
     try {
@@ -244,7 +244,7 @@ ${logs}`);
   });
   netSession.setPermissionRequestHandler((_wc, _p, cb) => cb(false));
 
-  const http = new Http((url, init) => netSession.fetch(url, init as Parameters<typeof netSession.fetch>[1]), `Relay/${app.getVersion()}`);
+  const http = new Http((url, init) => netSession.fetch(url, init as Parameters<typeof netSession.fetch>[1]), `NODAL/${app.getVersion()}`);
   const timeouts = (): Timeouts => ({ ...DEFAULT_TIMEOUTS, firstByteMs: store.getSettings().firstByteTimeoutSec * 1000 });
 
   const applyNetworkSettings = () => {

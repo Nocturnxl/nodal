@@ -1,6 +1,6 @@
 import type { ExtensionField, KeyCheck, ModelInfo, ModelListResult, ProviderConfig } from '@shared/types';
 import { MODEL_CACHE_TTL_MS, Store } from './db/store';
-import { relayError, toNormalized } from './net/errors';
+import { nodalError, toNormalized } from './net/errors';
 import type { Http, Timeouts } from './net/http';
 import { checkBaseUrl } from './net/http';
 import type { ProviderRuntime } from './providers/adapter';
@@ -23,14 +23,14 @@ export class ModelService {
 
   runtime(config: ProviderConfig, apiKey?: string): ProviderRuntime {
     const verdict = checkBaseUrl(config.baseUrl, config.allowInsecureHttp);
-    if (!verdict.ok) throw relayError('blocked', verdict.reason ?? 'The provider URL is not allowed.');
+    if (!verdict.ok) throw nodalError('blocked', verdict.reason ?? 'The provider URL is not allowed.');
     const key = apiKey ?? (config.auth.scheme === 'none' ? undefined : this.keys.get(config.id));
     return { config, apiKey: key, http: this.http, timeouts: this.timeouts() };
   }
 
   private provider(id: string): ProviderConfig {
     const p = this.store.getProvider(id);
-    if (!p) throw relayError('invalid_request', 'That provider no longer exists.');
+    if (!p) throw nodalError('invalid_request', 'That provider no longer exists.');
     return p;
   }
 

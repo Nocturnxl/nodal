@@ -17,18 +17,18 @@ export interface Logger {
  */
 export function createLogger(dir: string): Logger {
   mkdirSync(dir, { recursive: true });
-  const file = join(dir, 'relay.log');
+  const file = join(dir, 'nodal.log');
 
   function rotate(): void {
     try {
       if (!existsSync(file) || statSync(file).size < MAX_BYTES) return;
-      const oldest = join(dir, `relay.${MAX_FILES - 1}.log`);
+      const oldest = join(dir, `nodal.${MAX_FILES - 1}.log`);
       if (existsSync(oldest)) unlinkSync(oldest);
       for (let i = MAX_FILES - 2; i >= 1; i--) {
-        const from = join(dir, `relay.${i}.log`);
-        if (existsSync(from)) renameSync(from, join(dir, `relay.${i + 1}.log`));
+        const from = join(dir, `nodal.${i}.log`);
+        if (existsSync(from)) renameSync(from, join(dir, `nodal.${i + 1}.log`));
       }
-      renameSync(file, join(dir, 'relay.1.log'));
+      renameSync(file, join(dir, 'nodal.1.log'));
     } catch {
       /* logging must never crash the app */
     }

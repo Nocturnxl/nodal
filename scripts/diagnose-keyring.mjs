@@ -8,14 +8,14 @@ import { join, resolve } from 'node:path';
 
 const root = resolve(import.meta.dirname, '..');
 // Note: Playwright itself adds --password-store=basic, so the switch value seen
-// here is the driver's unless RELAY_PASSWORD_STORE names a real backend.
+// here is the driver's unless NODAL_PASSWORD_STORE names a real backend.
 const variants = [[]];
 
 for (const extra of variants) {
-  const userData = mkdtempSync(join(tmpdir(), 'relay-keyring-'));
+  const userData = mkdtempSync(join(tmpdir(), 'nodal-keyring-'));
   let app;
   try {
-    app = await electron.launch({ args: [root, ...extra], env: { ...process.env, RELAY_USER_DATA: userData } });
+    app = await electron.launch({ args: [root, ...extra], env: { ...process.env, NODAL_USER_DATA: userData } });
     await app.firstWindow();
     const report = await app.evaluate(async ({ safeStorage, app: a }) => {
       const backend = () => (typeof safeStorage.getSelectedStorageBackend === 'function' ? safeStorage.getSelectedStorageBackend() : 'n/a');

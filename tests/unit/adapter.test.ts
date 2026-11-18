@@ -1,6 +1,6 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import type { ChatEvent, NormalizedError } from '@shared/types';
-import { RelayError } from '../../src/main/net/errors';
+import { NodalError } from '../../src/main/net/errors';
 import type { ChatRequest, ProviderRuntime } from '../../src/main/providers/adapter';
 import { adaptBody, createOpenAiCompatibleAdapter, mapGenericModel } from '../../src/main/providers/openaiCompatible';
 import { adapterFor } from '../../src/main/providers/registry';
@@ -34,7 +34,7 @@ async function collect(modelId: string, opts: { runtime?: ProviderRuntime; signa
   try {
     for await (const ev of adapter.streamChat(opts.runtime ?? rt, req(modelId, opts.request), opts.signal ?? new AbortController().signal)) events.push(ev);
   } catch (e) {
-    if (!(e instanceof RelayError)) throw e;
+    if (!(e instanceof NodalError)) throw e;
     error = e.normalized;
   }
   const text = events.filter((e) => e.t === 'delta').map((e) => (e as { text: string }).text).join('');
@@ -48,7 +48,7 @@ describe('model list', () => {
     expect(models.map((m) => m.id)).toEqual(MOCK_MODELS);
     expect(models[0]).toMatchObject({ providerId: 'p', displayName: 'mock-echo', capabilities: {} });
     expect(mock.requests[0].headers.authorization).toBe(`Bearer ${MOCK_KEY}`);
-    expect(mock.requests[0].headers['user-agent']).toBe('Relay/test');
+    expect(mock.requests[0].headers['user-agent']).toBe('NODAL/test');
   });
 
   it('picks up aggregator-style metadata when present', () => {
@@ -109,10 +109,10 @@ describe('model list', () => {
   it('supports a custom header auth scheme and extra headers', async () => {
     const open = await startMockServer({ auth: false });
     try {
-      const config = { id: 'h', ...mockProvider(open.url, { auth: { scheme: 'header', headerName: 'x-api-key' }, extraHeaders: { 'X-Title': 'Relay' } }) };
+      const config = { id: 'h', ...mockProvider(open.url, { auth: { scheme: 'header', headerName: 'x-api-key' }, extraHeaders: { 'X-Title': 'NODAL' } }) };
       await adapter.listModels({ ...rt, config, apiKey: 'secret-value' });
       expect(open.requests[0].headers['x-api-key']).toBe('secret-value');
-      expect(open.requests[0].headers['x-title']).toBe('Relay');
+      expect(open.requests[0].headers['x-title']).toBe('NODAL');
       expect(open.requests[0].headers.authorization).toBeUndefined();
     } finally {
       await open.close();

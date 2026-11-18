@@ -195,7 +195,7 @@ export interface Usage {
 
 /**
  * finishReason: null while streaming; provider values ('stop', 'length', ...);
- * or Relay's own: 'cancelled', 'incomplete' (failed mid-stream), 'error'
+ * or NODAL's own: 'cancelled', 'incomplete' (failed mid-stream), 'error'
  * (failed before any text), 'interrupted' (app closed mid-stream).
  */
 export interface Message {

@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 import type { ConversationListItem } from '@shared/types';
 import { relativeTime } from '../lib/tree';
 import { useStore } from '../store';
-import { Button, IconButton, cx } from './ui';
+import { Button, IconButton, Logo, cx } from './ui';
 
 function Item({ c }: { c: ConversationListItem }) {
   const active = useStore((s) => s.currentId === c.id);
@@ -99,6 +99,9 @@ export function Sidebar() {
 
   return (
     <aside className="flex w-[264px] shrink-0 flex-col border-r border-line bg-panel" aria-label="Conversations">
+      <div className="px-3.5 pt-3.5 pb-1">
+        <Logo size={24} />
+      </div>
       <div className="flex items-center gap-2 p-2.5">
         <Button className="flex-1" onClick={() => void newChat()} title="New chat (Ctrl+N)">
           <Plus size={14} /> New chat

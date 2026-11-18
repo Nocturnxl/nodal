@@ -1,13 +1,13 @@
-import { IPC_ERROR_TAG, type RelayApi } from '@shared/api';
+import { IPC_ERROR_TAG, type NodalApi } from '@shared/api';
 import type { NormalizedError } from '@shared/types';
 
 declare global {
   interface Window {
-    relay: RelayApi;
+    nodal: NodalApi;
   }
 }
 
-export const relay: RelayApi = window.relay;
+export const nodal: NodalApi = window.nodal;
 
 /** Handler failures cross IPC as a tagged JSON string inside the error message. */
 export function parseIpcError(e: unknown): NormalizedError {

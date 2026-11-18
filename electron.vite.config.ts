@@ -17,7 +17,7 @@ const DEV_CSP =
 
 function devCsp(): Plugin {
   return {
-    name: 'relay-dev-csp',
+    name: 'nodal-dev-csp',
     apply: 'serve',
     transformIndexHtml(html) {
       return html.replace(/(<meta http-equiv="Content-Security-Policy" content=")[^"]*(")/, `$1${DEV_CSP}$2`);
@@ -28,7 +28,7 @@ function devCsp(): Plugin {
 // Records which npm packages were compiled into the renderer, for the licence notices.
 function recordBundledPackages(): Plugin {
   return {
-    name: 'relay-bundled-packages',
+    name: 'nodal-bundled-packages',
     apply: 'build',
     generateBundle() {
       const found = new Set<string>();

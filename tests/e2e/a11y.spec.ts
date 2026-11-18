@@ -1,6 +1,6 @@
 import AxeBuilder from '@axe-core/playwright';
 import { _electron as electron, expect, test, type ElectronApplication, type Page } from '@playwright/test';
-import type { RelayApi } from '@shared/api';
+import type { NodalApi } from '@shared/api';
 import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -9,7 +9,7 @@ import { MOCK_KEY, startMockServer, type MockServer } from '../mock/server';
 
 declare global {
   interface Window {
-    relay: RelayApi;
+    nodal: NodalApi;
   }
 }
 
@@ -32,8 +32,8 @@ async function scan(name: string): Promise<void> {
 
 test.beforeAll(async () => {
   mock = await startMockServer({ chunkDelayMs: 1 });
-  userData = mkdtempSync(join(tmpdir(), 'relay-e2e-a11y-'));
-  app = await electron.launch({ args: appArgs(), env: { ...process.env, RELAY_USER_DATA: userData } as Record<string, string> });
+  userData = mkdtempSync(join(tmpdir(), 'nodal-e2e-a11y-'));
+  app = await electron.launch({ args: appArgs(), env: { ...process.env, NODAL_USER_DATA: userData } as Record<string, string> });
   page = await app.firstWindow();
   await page.waitForLoadState('domcontentloaded');
 });
@@ -46,9 +46,9 @@ test.afterAll(async () => {
 
 for (const theme of ['light', 'dark'] as const) {
   test(`welcome and provider form (${theme})`, async () => {
-    await page.evaluate((t) => window.relay.settings.set({ theme: t }), theme);
+    await page.evaluate((t) => window.nodal.settings.set({ theme: t }), theme);
     await page.reload();
-    await expect(page.getByRole('heading', { name: 'Welcome to Relay' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Welcome to NODAL' })).toBeVisible();
     await scan('welcome');
     await page.getByRole('button', { name: /^Venice/ }).click();
     await page.getByRole('button', { name: 'Connection details' }).click();
@@ -59,9 +59,9 @@ for (const theme of ['light', 'dark'] as const) {
 test('set up a provider and a conversation with rich content and an error', async () => {
   await page.evaluate(
     async ({ url, key }) => {
-      const { saved } = await window.relay.providers.save({ kind: 'openai-compatible', preset: 'venice', displayName: 'Venice.ai', baseUrl: url, auth: { scheme: 'bearer' }, modelListPath: '/models', allowInsecureHttp: false });
-      await window.relay.keys.set(saved.id, key);
-      await window.relay.settings.set({ lastModel: { providerId: saved.id, modelId: 'mock-markdown' }, theme: 'light' });
+      const { saved } = await window.nodal.providers.save({ kind: 'openai-compatible', preset: 'venice', displayName: 'Venice.ai', baseUrl: url, auth: { scheme: 'bearer' }, modelListPath: '/models', allowInsecureHttp: false });
+      await window.nodal.keys.set(saved.id, key);
+      await window.nodal.settings.set({ lastModel: { providerId: saved.id, modelId: 'mock-markdown' }, theme: 'light' });
     },
     { url: mock.url, key: MOCK_KEY },
   );
@@ -81,7 +81,7 @@ test('set up a provider and a conversation with rich content and an error', asyn
 
 for (const theme of ['light', 'dark'] as const) {
   test(`chat, model picker and settings (${theme})`, async () => {
-    await page.evaluate((t) => window.relay.settings.set({ theme: t }), theme);
+    await page.evaluate((t) => window.nodal.settings.set({ theme: t }), theme);
     await page.reload();
     await expect(page.locator('[data-finish="error"]')).toHaveCount(1);
     await scan('chat');

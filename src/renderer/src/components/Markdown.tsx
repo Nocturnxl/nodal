@@ -5,7 +5,7 @@ import rehypeHighlight from 'rehype-highlight';
 import rehypeKatex from 'rehype-katex';
 import remarkGfm from 'remark-gfm';
 import remarkMath from 'remark-math';
-import { relay } from '../lib/ipc';
+import { nodal } from '../lib/ipc';
 import { splitBlocks } from '../lib/tree';
 import { useStore } from '../store';
 import { CopyButton } from './ui';
@@ -15,7 +15,7 @@ import { CopyButton } from './ui';
 // first. Remote images are never fetched; they appear as a link instead.
 
 function openLink(href: string | undefined) {
-  if (href) void relay.app.openExternal(href).catch((e) => useStore.getState().toastError('Could not open the link', e));
+  if (href) void nodal.app.openExternal(href).catch((e) => useStore.getState().toastError('Could not open the link', e));
 }
 
 function nodeText(node: ReactNode): string {

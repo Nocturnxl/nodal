@@ -2,11 +2,11 @@ import { ArrowLeft, ChevronRight } from 'lucide-react';
 import { useState } from 'react';
 import { PRESETS, type Preset } from '@shared/presets';
 import type { KeyCheck, ProviderConfig } from '@shared/types';
-import { relay } from '../lib/ipc';
+import { nodal } from '../lib/ipc';
 import { formatTokens } from '../lib/tree';
 import { useStore } from '../store';
 import { ProviderForm } from './ProviderForm';
-import { Button } from './ui';
+import { Button, Logo } from './ui';
 
 export function PresetList({ onPick }: { onPick(p: Preset): void }) {
   return (
@@ -46,7 +46,8 @@ export function Welcome() {
       <div className="w-full max-w-[560px]">
         {!preset && (
           <>
-            <h1 className="text-[26px] font-semibold tracking-tight">Welcome to Relay</h1>
+            <Logo size={52} className="mb-7" />
+            <h1 className="text-[26px] font-semibold tracking-tight">Welcome to NODAL</h1>
             <p className="mt-1.5 mb-6 text-muted">
               A chat client that runs entirely on this computer. Connect a provider to begin. Your key is encrypted by the operating system, and nothing leaves this machine except the requests you send to
               the provider you choose.
@@ -58,7 +59,7 @@ export function Welcome() {
                 onClick={async () => {
                   const s = useStore.getState();
                   try {
-                    const r = await relay.data.importFile();
+                    const r = await nodal.data.importFile();
                     if (!r) return;
                     await s.refreshProviders();
                     await s.refreshConversations();

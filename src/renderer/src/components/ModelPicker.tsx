@@ -2,7 +2,7 @@ import { Brain, Eye, Globe, Plus, RefreshCw, Search, Trash2, Wrench } from 'luci
 import { Dialog } from 'radix-ui';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { CAPABILITY_KEYS, type CapabilityKey, type ModelInfo } from '@shared/types';
-import { relay } from '../lib/ipc';
+import { nodal } from '../lib/ipc';
 import { formatTokens } from '../lib/tree';
 import { useStore } from '../store';
 import { Badge, Button, IconButton, cx } from './ui';
@@ -42,7 +42,7 @@ function Detail({ m, providerName, current }: { m: ModelInfo; providerName: stri
       if (v !== undefined) overrides[k] = v;
     }
     try {
-      await relay.models.setOverride(m.providerId, m.id, Object.keys(overrides).length ? overrides : null);
+      await nodal.models.setOverride(m.providerId, m.id, Object.keys(overrides).length ? overrides : null);
       await loadModels(m.providerId);
     } catch (e) {
       toastError('Could not save the override', e);
@@ -73,7 +73,7 @@ function Detail({ m, providerName, current }: { m: ModelInfo; providerName: stri
           <>
             <dt className="text-muted">Privacy</dt>
             <dd>
-              {m.details.privacy} <span className="text-faint">(the provider's claim; not verified by Relay)</span>
+              {m.details.privacy} <span className="text-faint">(the provider's claim; not verified by NODAL)</span>
             </dd>
           </>
         )}
@@ -158,7 +158,7 @@ export function ModelPicker() {
     const id = q.trim();
     if (!id) return;
     try {
-      await relay.models.addManual(providerId, id);
+      await nodal.models.addManual(providerId, id);
       await loadModels(providerId);
       await chooseModel(providerId, id);
     } catch (e) {
@@ -265,7 +265,7 @@ export function ModelPicker() {
                             className="h-6 w-6"
                             onClick={(e) => {
                               e.stopPropagation();
-                              void relay.models.removeManual(g.provider.id, m.id).then(() => loadModels(g.provider.id));
+                              void nodal.models.removeManual(g.provider.id, m.id).then(() => loadModels(g.provider.id));
                             }}
                           >
                             <Trash2 size={12} />

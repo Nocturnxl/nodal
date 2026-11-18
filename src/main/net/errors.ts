@@ -1,21 +1,21 @@
 import type { ErrorCode, NormalizedError, RateLimitInfo } from '@shared/types';
 
 /** Any failure that should reach the user carries a NormalizedError. */
-export class RelayError extends Error {
+export class NodalError extends Error {
   readonly normalized: NormalizedError;
   constructor(normalized: NormalizedError) {
     super(normalized.message);
-    this.name = 'RelayError';
+    this.name = 'NodalError';
     this.normalized = normalized;
   }
 }
 
-export function relayError(code: ErrorCode, message: string, extra: Partial<NormalizedError> = {}): RelayError {
-  return new RelayError({ code, message, ...extra });
+export function nodalError(code: ErrorCode, message: string, extra: Partial<NormalizedError> = {}): NodalError {
+  return new NodalError({ code, message, ...extra });
 }
 
 export function toNormalized(e: unknown): NormalizedError {
-  if (e instanceof RelayError) return e.normalized;
+  if (e instanceof NodalError) return e.normalized;
   const err = e as { name?: string; message?: string; cause?: { code?: string; message?: string } } | undefined;
   if (err?.name === 'AbortError') return { code: 'cancelled', message: 'Cancelled' };
   const raw = [err?.message, err?.cause?.code, err?.cause?.message].filter(Boolean).join(' ');

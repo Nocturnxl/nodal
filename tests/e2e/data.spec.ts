@@ -1,5 +1,5 @@
 import { _electron as electron, expect, test, type ElectronApplication, type Page } from '@playwright/test';
-import type { RelayApi } from '@shared/api';
+import type { NodalApi } from '@shared/api';
 import { existsSync, mkdtempSync, readdirSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -8,7 +8,7 @@ import { MOCK_KEY, startMockServer, type MockServer } from '../mock/server';
 
 declare global {
   interface Window {
-    relay: RelayApi;
+    nodal: NodalApi;
   }
 }
 
@@ -23,7 +23,7 @@ const dirs: string[] = [];
 const apps: ElectronApplication[] = [];
 
 async function launch(userData: string): Promise<{ app: ElectronApplication; page: Page }> {
-  const app = await electron.launch({ args: appArgs(), env: { ...process.env, RELAY_USER_DATA: userData } as Record<string, string> });
+  const app = await electron.launch({ args: appArgs(), env: { ...process.env, NODAL_USER_DATA: userData } as Record<string, string> });
   apps.push(app);
   const page = await app.firstWindow();
   await page.waitForLoadState('domcontentloaded');
@@ -31,7 +31,7 @@ async function launch(userData: string): Promise<{ app: ElectronApplication; pag
 }
 
 function profile(): string {
-  const d = mkdtempSync(join(tmpdir(), 'relay-e2e-data-'));
+  const d = mkdtempSync(join(tmpdir(), 'nodal-e2e-data-'));
   dirs.push(d);
   return d;
 }
@@ -67,10 +67,10 @@ test('a failed first attempt leaves no provider behind', async () => {
   await page.getByLabel('API key', { exact: true }).fill('wrong-key');
   await page.getByRole('button', { name: 'Connect', exact: true }).click();
   await expect(page.getByRole('alert')).toContainText('Key rejected');
-  expect(await page.evaluate(async () => (await window.relay.providers.list()).length)).toBe(1);
+  expect(await page.evaluate(async () => (await window.nodal.providers.list()).length)).toBe(1);
   await page.getByRole('button', { name: 'All providers' }).click();
-  await expect(page.getByRole('heading', { name: 'Welcome to Relay' })).toBeVisible();
-  await expect.poll(() => page.evaluate(async () => (await window.relay.providers.list()).length)).toBe(0);
+  await expect(page.getByRole('heading', { name: 'Welcome to NODAL' })).toBeVisible();
+  await expect.poll(() => page.evaluate(async () => (await window.nodal.providers.list()).length)).toBe(0);
   await app.close();
 });
 
@@ -152,7 +152,7 @@ test('math renders with KaTeX when switched on, and stays as text when off', asy
   await expect(reply).toHaveAttribute('data-finish', 'stop');
   await expect(reply.locator('.katex')).toHaveCount(0);
   await expect(reply).toContainText('$e^{i\\pi} + 1 = 0$');
-  await page.evaluate(() => window.relay.settings.set({ mathEnabled: true }));
+  await page.evaluate(() => window.nodal.settings.set({ mathEnabled: true }));
   await page.reload();
   await expect(page.locator('[data-role="assistant"]').last().locator('.katex')).toHaveCount(1);
   await app.close();
@@ -192,7 +192,7 @@ test('export everything to a ZIP and restore it into an empty profile from the w
 
   const dst = profile();
   const b = await launch(dst);
-  await expect(b.page.getByRole('heading', { name: 'Welcome to Relay' })).toBeVisible();
+  await expect(b.page.getByRole('heading', { name: 'Welcome to NODAL' })).toBeVisible();
   await b.app.evaluate(({ dialog }, filePath) => {
     dialog.showOpenDialog = (async () => ({ canceled: false, filePaths: [filePath] })) as unknown as typeof dialog.showOpenDialog;
   }, zip);
@@ -206,7 +206,7 @@ test('export everything to a ZIP and restore it into an empty profile from the w
   await expect(b.page.locator('[data-role="user"]').first()).toContainText('2/2');
   await expect(b.page.locator('[data-role="user"]').getByAltText('Attached image')).toBeVisible();
   expect(attachmentFiles(dst)).toHaveLength(1);
-  const status = await b.page.evaluate(async () => window.relay.keys.status((await window.relay.providers.list())[0].id));
+  const status = await b.page.evaluate(async () => window.nodal.keys.status((await window.nodal.providers.list())[0].id));
   expect(status).toEqual({ present: false });
 
   // Sending without a key fails visibly and offers to re-enter it.

@@ -149,7 +149,16 @@ button:not(:disabled) {
 }
 }
 
-@keyframes relay-pulse {
+/* The NODAL lettering, tinted with the current text colour. */
+.wordmark {
+  display: inline-block;
+  aspect-ratio: 682 / 96;
+  background-color: currentColor;
+  -webkit-mask: url('./assets/nodal-wordmark.png') center / contain no-repeat;
+  mask: url('./assets/nodal-wordmark.png') center / contain no-repeat;
+}
+
+@keyframes nodal-pulse {
   0%,
   100% {
     opacity: 0.25;
@@ -165,7 +174,7 @@ button:not(:disabled) {
   margin-right: 3px;
   border-radius: 50%;
   background: var(--muted);
-  animation: relay-pulse 1.2s infinite;
+  animation: nodal-pulse 1.2s infinite;
 }
 .typing-dot:nth-child(2) {
   animation-delay: 0.2s;
@@ -174,7 +183,7 @@ button:not(:disabled) {
   animation-delay: 0.4s;
 }
 
-@keyframes relay-in {
+@keyframes nodal-in {
   from {
     opacity: 0;
     transform: translateY(4px);
@@ -185,7 +194,7 @@ button:not(:disabled) {
   }
 }
 .pop-in {
-  animation: relay-in 0.12s ease-out;
+  animation: nodal-in 0.12s ease-out;
 }
 
 @media (prefers-reduced-motion: reduce) {

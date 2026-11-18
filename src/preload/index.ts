@@ -1,5 +1,5 @@
 import { contextBridge, ipcRenderer } from 'electron';
-import { CH, type RelayApi } from '@shared/api';
+import { CH, type NodalApi } from '@shared/api';
 import type { ChatEventBatch } from '@shared/types';
 
 // The only bridge between the sandboxed renderer and main. It exposes typed
@@ -7,7 +7,7 @@ import type { ChatEventBatch } from '@shared/types';
 // "send to any channel" helper, and no way to read a key back.
 const invoke = <T>(channel: string, payload?: unknown): Promise<T> => ipcRenderer.invoke(channel, payload) as Promise<T>;
 
-const api: RelayApi = {
+const api: NodalApi = {
   providers: {
     list: () => invoke(CH.providersList),
     save: (config) => invoke(CH.providersSave, config),
@@ -68,4 +68,4 @@ const api: RelayApi = {
   },
 };
 
-contextBridge.exposeInMainWorld('relay', api);
+contextBridge.exposeInMainWorld('nodal', api);

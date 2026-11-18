@@ -1,7 +1,7 @@
 import { ArrowUp, ImagePlus, Square, X } from 'lucide-react';
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import type { AttachmentRef, Conversation, ModelInfo } from '@shared/types';
-import { relay } from '../lib/ipc';
+import { nodal } from '../lib/ipc';
 import { formatTokens } from '../lib/tree';
 import { useStore } from '../store';
 import { IconButton, cx } from './ui';
@@ -67,7 +67,7 @@ export function Composer({ conversation, model, providerName }: { conversation: 
       for (const f of list) {
         try {
           const data = new Uint8Array(await f.arrayBuffer());
-          const added = await relay.attachments.add(f.type, data);
+          const added = await nodal.attachments.add(f.type, data);
           if (forConversation !== idRef.current) return; // the user moved to another chat meanwhile
           const preview = URL.createObjectURL(new Blob([data], { type: f.type }));
           updatePending((p) => (p.some((x) => x.sha256 === added.sha256) ? p : [...p, { ...added, preview }]));

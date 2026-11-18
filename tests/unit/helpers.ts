@@ -13,7 +13,7 @@ const dirs: string[] = [];
 const stores: Store[] = [];
 
 export function tmpDir(): string {
-  const d = mkdtempSync(join(tmpdir(), 'relay-test-'));
+  const d = mkdtempSync(join(tmpdir(), 'nodal-test-'));
   dirs.push(d);
   return d;
 }
@@ -44,7 +44,7 @@ export const fakeSafeStorage: SafeStorageLike = {
   getSelectedStorageBackend: () => 'gnome_libsecret',
 };
 
-export const http = new Http((url, init) => fetch(url, init), 'Relay/test');
+export const http = new Http((url, init) => fetch(url, init), 'NODAL/test');
 
 export const FAST: Timeouts = { ...DEFAULT_TIMEOUTS, connectMs: 3000, firstByteMs: 3000, idleMs: 3000 };
 

@@ -13,7 +13,7 @@ import type {
 } from '@shared/types';
 import { DEFAULT_SETTINGS } from '@shared/types';
 import type { ConversationPatch } from '@shared/api';
-import { relayError } from '../net/errors';
+import { nodalError } from '../net/errors';
 import type { Db } from './index';
 
 export const MODEL_CACHE_TTL_MS = 24 * 60 * 60 * 1000;
@@ -174,13 +174,13 @@ export class Store {
   deleteProvider(id: string): void {
     const n = this.providerUsage(id);
     if (n > 0) {
-      throw relayError('blocked', `${n} conversation${n === 1 ? '' : 's'} still use this provider. Reassign or delete them first.`);
+      throw nodalError('blocked', `${n} conversation${n === 1 ? '' : 's'} still use this provider. Reassign or delete them first.`);
     }
     this.db.prepare('DELETE FROM providers WHERE id = ?').run(id);
   }
 
   reassignConversations(fromProviderId: string, toProviderId: string, modelId: string): number {
-    if (!this.getProvider(toProviderId)) throw relayError('invalid_request', 'The target provider does not exist.');
+    if (!this.getProvider(toProviderId)) throw nodalError('invalid_request', 'The target provider does not exist.');
     return this.db
       .prepare('UPDATE conversations SET provider_id = ?, model_id = ?, extensions_json = ? WHERE provider_id = ?')
       .run(toProviderId, modelId, '{}', fromProviderId).changes;
@@ -289,12 +289,12 @@ export class Store {
 
   requireConversation(id: string): Conversation {
     const c = this.getConversation(id);
-    if (!c) throw relayError('invalid_request', 'That conversation no longer exists.');
+    if (!c) throw nodalError('invalid_request', 'That conversation no longer exists.');
     return c;
   }
 
   createConversation(input: { providerId: string; modelId: string; title?: string; id?: string }): Conversation {
-    if (!this.getProvider(input.providerId)) throw relayError('invalid_request', 'That provider no longer exists.');
+    if (!this.getProvider(input.providerId)) throw nodalError('invalid_request', 'That provider no longer exists.');
     const settings = this.getSettings();
     const id = input.id ?? randomUUID();
     const now = this.now();
@@ -319,10 +319,10 @@ export class Store {
 
   updateConversation(id: string, patch: ConversationPatch, touch = false): Conversation {
     const cur = this.requireConversation(id);
-    if (patch.providerId && !this.getProvider(patch.providerId)) throw relayError('invalid_request', 'That provider no longer exists.');
+    if (patch.providerId && !this.getProvider(patch.providerId)) throw nodalError('invalid_request', 'That provider no longer exists.');
     if (patch.activeLeafId) {
       const m = this.getMessage(patch.activeLeafId);
-      if (!m || m.conversationId !== id) throw relayError('invalid_request', 'That message is not part of this conversation.');
+      if (!m || m.conversationId !== id) throw nodalError('invalid_request', 'That message is not part of this conversation.');
     }
     const next = { ...cur, ...Object.fromEntries(Object.entries(patch).filter(([, v]) => v !== undefined)) } as Conversation;
     this.db

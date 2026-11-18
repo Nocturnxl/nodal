@@ -302,10 +302,10 @@ describe('limits and secrets', () => {
       expect(JSON.stringify(env.batches)).not.toContain(MOCK_KEY);
       for (const f of readdirSync(join(env.dir, 'logs'))) expect(readFileSync(join(env.dir, 'logs', f), 'utf8')).not.toContain(MOCK_KEY);
       env.store.db.pragma('wal_checkpoint(TRUNCATE)');
-      expect(readFileSync(join(env.dir, 'relay.db')).includes(MOCK_KEY)).toBe(false);
+      expect(readFileSync(join(env.dir, 'nodal.db')).includes(MOCK_KEY)).toBe(false);
       expect(readFileSync(join(env.dir, 'keys.json'), 'utf8')).not.toContain(MOCK_KEY);
     }
-    const log = readFileSync(join(t.dir, 'logs', 'relay.log'), 'utf8');
+    const log = readFileSync(join(t.dir, 'logs', 'nodal.log'), 'utf8');
     expect(log).toContain('chat request failed');
     expect(log).not.toContain('hi"'); // no message bodies
   });

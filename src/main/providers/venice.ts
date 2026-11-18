@@ -1,5 +1,5 @@
 import type { ExtensionField, ModelInfo } from '@shared/types';
-import { normalizeHttpError, RelayError, relayError } from '../net/errors';
+import { normalizeHttpError, NodalError, nodalError } from '../net/errors';
 import { buildAuthHeaders, joinUrl, readBody } from '../net/http';
 import type { ProviderExtension } from './adapter';
 
@@ -194,7 +194,7 @@ export const veniceExtension: ProviderExtension = {
       if (res.status === 404) return { ok: false, unverifiable: true, error };
       return { ok: false, error };
     } catch (e) {
-      return { ok: false, error: e instanceof RelayError ? e.normalized : relayError('internal', String(e)).normalized };
+      return { ok: false, error: e instanceof NodalError ? e.normalized : nodalError('internal', String(e)).normalized };
     }
   },
 };

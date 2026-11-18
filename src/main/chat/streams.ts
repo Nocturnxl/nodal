@@ -13,7 +13,7 @@ import type {
 import type { AttachmentStore } from '../attachments';
 import { Store, textOf } from '../db/store';
 import type { Logger } from '../log';
-import { relayError, toNormalized } from '../net/errors';
+import { nodalError, toNormalized } from '../net/errors';
 import type { Http, Timeouts } from '../net/http';
 import { checkBaseUrl } from '../net/http';
 import type { ProviderAdapter, ProviderRuntime } from '../providers/adapter';
@@ -111,10 +111,10 @@ export class StreamManager {
   start(req: ChatStartRequest): ChatStartResult {
     const { store } = this.d;
     const conv = store.requireConversation(req.conversationId);
-    if (this.isStreaming(conv.id)) throw relayError('busy', 'This conversation is already generating a reply.');
-    if (this.active.size >= MAX_STREAMS) throw relayError('busy', `Relay runs at most ${MAX_STREAMS} replies at once. Wait for one to finish or stop it.`);
+    if (this.isStreaming(conv.id)) throw nodalError('busy', 'This conversation is already generating a reply.');
+    if (this.active.size >= MAX_STREAMS) throw nodalError('busy', `NODAL runs at most ${MAX_STREAMS} replies at once. Wait for one to finish or stop it.`);
     const provider = store.getProvider(conv.providerId);
-    if (!provider) throw relayError('invalid_request', 'The provider for this conversation no longer exists.');
+    if (!provider) throw nodalError('invalid_request', 'The provider for this conversation no longer exists.');
 
     let userMessage: Message | undefined;
     let assistant: Message;
@@ -144,7 +144,7 @@ export class StreamManager {
     });
     const owned = (id: string, role: Message['role']): Message => {
       const m = store.getMessage(id);
-      if (!m || m.conversationId !== conv.id || m.role !== role) throw relayError('invalid_request', 'That message cannot be used for this action.');
+      if (!m || m.conversationId !== conv.id || m.role !== role) throw nodalError('invalid_request', 'That message cannot be used for this action.');
       return m;
     };
 
@@ -152,10 +152,10 @@ export class StreamManager {
       if (req.mode === 'send') {
         const content: ContentPart[] = [{ type: 'text', text: req.text }];
         for (const a of req.attachments ?? []) {
-          if (!this.d.attachments.read(a.sha256)) throw relayError('invalid_request', 'An attached image is no longer available.');
+          if (!this.d.attachments.read(a.sha256)) throw nodalError('invalid_request', 'An attached image is no longer available.');
           content.push({ type: 'image', sha256: a.sha256, mime: a.mime });
         }
-        if (!req.text.trim() && content.length === 1) throw relayError('invalid_request', 'Type a message first.');
+        if (!req.text.trim() && content.length === 1) throw nodalError('invalid_request', 'Type a message first.');
         if (!conv.activeLeafId && conv.title === 'New chat') title = titleFrom(req.text);
         userMessage = store.insertMessage(user(conv.activeLeafId, content));
         assistant = store.insertMessage(blank(userMessage.id));
@@ -286,9 +286,9 @@ export class StreamManager {
 
     try {
       const provider = store.getProvider(conv.providerId);
-      if (!provider) throw relayError('invalid_request', 'The provider for this conversation no longer exists.');
+      if (!provider) throw nodalError('invalid_request', 'The provider for this conversation no longer exists.');
       const verdict = checkBaseUrl(provider.baseUrl, provider.allowInsecureHttp);
-      if (!verdict.ok) throw relayError('blocked', verdict.reason ?? 'The provider URL is not allowed.');
+      if (!verdict.ok) throw nodalError('blocked', verdict.reason ?? 'The provider URL is not allowed.');
       const model = store.getModel(conv.providerId, conv.modelId);
       const adapter = this.adapterFor(provider);
       const built = buildContext(path, {
@@ -316,7 +316,7 @@ export class StreamManager {
         try {
           // The key is decrypted per attempt and lives only in this scope.
           const apiKey = provider.auth.scheme === 'none' ? undefined : this.d.keys.get(provider.id);
-          if (provider.auth.scheme !== 'none' && !apiKey) throw relayError('auth', 'No API key is saved for this provider.');
+          if (provider.auth.scheme !== 'none' && !apiKey) throw nodalError('auth', 'No API key is saved for this provider.');
           const runtime: ProviderRuntime = { config: provider, apiKey, http: this.d.http, timeouts: this.d.timeouts() };
           let finishReason = 'stop';
           for await (const ev of adapter.streamChat(runtime, request, signal)) {

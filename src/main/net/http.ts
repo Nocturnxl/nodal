@@ -1,5 +1,5 @@
 import type { ProviderConfig } from '@shared/types';
-import { RelayError, relayError, toNormalized } from './errors';
+import { NodalError, nodalError, toNormalized } from './errors';
 import { SseParser } from './sse';
 
 export type FetchLike = (url: string, init: RequestInit) => Promise<Response>;
@@ -154,10 +154,10 @@ export class Http {
     } catch (e) {
       opts.signal?.removeEventListener('abort', onAbort);
       if (timedOut) {
-        throw relayError('timeout', `No response from the server within ${Math.round(opts.timeoutMs / 1000)} s (connect / first-byte timer).`);
+        throw nodalError('timeout', `No response from the server within ${Math.round(opts.timeoutMs / 1000)} s (connect / first-byte timer).`);
       }
-      if (opts.signal?.aborted) throw relayError('cancelled', 'Cancelled');
-      throw new RelayError(toNormalized(e));
+      if (opts.signal?.aborted) throw nodalError('cancelled', 'Cancelled');
+      throw new NodalError(toNormalized(e));
     } finally {
       clearTimeout(timer);
     }
@@ -204,7 +204,7 @@ async function readText(body: ReadableStream<Uint8Array> | null, maxBytes: numbe
 export async function readBody(res: HttpResponse, timeoutMs: number, maxBytes = 32 * 1024 * 1024): Promise<string> {
   let timer: ReturnType<typeof setTimeout> | undefined;
   const timeout = new Promise<never>((_, reject) => {
-    timer = setTimeout(() => reject(relayError('timeout', 'The server stopped sending the response body.')), timeoutMs);
+    timer = setTimeout(() => reject(nodalError('timeout', 'The server stopped sending the response body.')), timeoutMs);
   });
   try {
     return await Promise.race([res.text(maxBytes), timeout]);
@@ -236,7 +236,7 @@ export async function* readSse(
         timer = setTimeout(
           () =>
             reject(
-              relayError(
+              nodalError(
                 'timeout',
                 first
                   ? `The model sent nothing within ${Math.round(ms / 1000)} s (first-byte timer).`
@@ -250,12 +250,12 @@ export async function* readSse(
       try {
         chunk = await Promise.race([reader.read(), timeout]);
       } catch (e) {
-        if (e instanceof RelayError) {
+        if (e instanceof NodalError) {
           res.abort(e);
           throw e;
         }
-        if (signal?.aborted) throw relayError('cancelled', 'Cancelled');
-        throw new RelayError(toNormalized(e));
+        if (signal?.aborted) throw nodalError('cancelled', 'Cancelled');
+        throw new NodalError(toNormalized(e));
       } finally {
         clearTimeout(timer);
       }
