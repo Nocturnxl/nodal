@@ -1,0 +1,161 @@
+{
+ "data": [
+  {
+   "id": "openai/gpt-6.2-astra-pro",
+   "canonical_slug": "openai/gpt-6.2-astra-pro-20261117",
+   "hugging_face_id": null,
+   "name": "OpenAI: GPT-6.2 Astra Pro",
+   "created": 1794938432,
+   "context_length": 1050000,
+   "architecture": {
+    "modality": "text+image+file->text",
+    "input_modalities": [
+     "file",
+     "image",
+     "text"
+    ],
+    "output_modalities": [
+     "text"
+    ],
+    "tokenizer": "GPT",
+    "instruct_type": null
+   },
+   "pricing": {
+    "prompt": "0.000008",
+    "completion": "0.00004",
+    "web_search": "0.01",
+    "input_cache_read": "0.0000004",
+    "input_cache_write": "0.00001",
+    "overrides": [
+     {
+      "min_prompt_tokens": 272000,
+      "prompt": "0.000016",
+      "completion": "0.00006",
+      "input_cache_read": "0.0000008",
+      "input_cache_write": "0.00002"
+     }
+    ]
+   },
+   "top_provider": {
+    "context_length": 1050000,
+    "max_completion_tokens": 128000,
+    "is_moderated": true
+   },
+   "supported_parameters": [
+    "include_reasoning",
+    "max_completion_tokens",
+    "max_tokens",
+    "reasoning",
+    "reasoning_effort",
+    "response_format",
+    "seed",
+    "structured_outputs",
+    "tool_choice",
+    "tools",
+    "verbosity"
+   ],
+   "default_parameters": {},
+   "knowledge_cutoff": null,
+   "expiration_date": null,
+   "reasoning": {
+    "mandatory": true,
+    "default_enabled": true,
+    "supported_efforts": [
+     "max",
+     "xhigh",
+     "high",
+     "medium",
+     "low"
+    ],
+    "default_effort": "medium"
+   }
+  },
+  {
+   "id": "baidu/ernie-5.5-flash-preview:free",
+   "canonical_slug": "baidu/ernie-5.5-flash-preview-20261110",
+   "hugging_face_id": "baidu/ERNIE-5.5-Flash-Preview",
+   "name": "Baidu: ERNIE-5.5-Flash-Preview (free)",
+   "created": 1794333533,
+   "context_length": 1024000,
+   "architecture": {
+    "modality": "text->text",
+    "input_modalities": [
+     "text"
+    ],
+    "output_modalities": [
+     "text"
+    ],
+    "tokenizer": "Other",
+    "instruct_type": null
+   },
+   "pricing": {
+    "prompt": "0",
+    "completion": "0"
+   },
+   "top_provider": {
+    "context_length": 1024000,
+    "max_completion_tokens": 921600,
+    "is_moderated": false
+   },
+   "supported_parameters": [
+    "include_reasoning",
+    "max_tokens",
+    "reasoning",
+    "reasoning_effort",
+    "response_format",
+    "structured_outputs",
+    "temperature",
+    "tool_choice",
+    "tools",
+    "top_p"
+   ],
+   "default_parameters": {},
+   "knowledge_cutoff": null,
+   "expiration_date": null,
+   "reasoning": {
+    "mandatory": true,
+    "default_enabled": true,
+    "supported_efforts": [
+     "high"
+    ],
+    "default_effort": "high"
+   }
+  },
+  {
+   "id": "scaledown/summarize",
+   "canonical_slug": "scaledown/summarize-20260928",
+   "hugging_face_id": null,
+   "name": "ScaleDown: Summarize",
+   "created": 1791893360,
+   "context_length": 1000000,
+   "architecture": {
+    "modality": "text+image+file->text",
+    "input_modalities": [
+     "text",
+     "image",
+     "file"
+    ],
+    "output_modalities": [
+     "text"
+    ],
+    "tokenizer": "Other",
+    "instruct_type": null
+   },
+   "pricing": {
+    "prompt": "0.00000004",
+    "completion": "0"
+   },
+   "top_provider": {
+    "context_length": 1000000,
+    "max_completion_tokens": 4000,
+    "is_moderated": false
+   },
+   "supported_parameters": [
+    "max_tokens"
+   ],
+   "default_parameters": {},
+   "knowledge_cutoff": null,
+   "expiration_date": null
+  }
+ ]
+}

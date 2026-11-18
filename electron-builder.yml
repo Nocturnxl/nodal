@@ -1,0 +1,59 @@
+appId: app.relay.desktop
+productName: Relay
+copyright: Relay
+directories:
+  output: dist
+  buildResources: build
+files:
+  - out/**
+  - '!out/.bundled-packages.json'
+  - package.json
+extraResources:
+  - from: THIRD-PARTY-NOTICES.md
+    to: THIRD-PARTY-NOTICES.md
+asar: true
+# Native modules cannot load from inside the archive.
+asarUnpack:
+  - node_modules/better-sqlite3/**
+
+# Electron fuses, flipped at packaging time (spec section 5). With these set
+# the binary cannot be repurposed as a generic Node runtime, ignores
+# NODE_OPTIONS and --inspect, loads code only from the ASAR, and validates the
+# ASAR against the hash embedded in the executable.
+electronFuses:
+  runAsNode: false
+  enableNodeOptionsEnvironmentVariable: false
+  enableNodeCliInspectArguments: false
+  onlyLoadAppFromAsar: true
+  enableEmbeddedAsarIntegrityValidation: true
+  enableCookieEncryption: true
+  grantFileProtocolExtraPrivileges: false
+
+win:
+  target:
+    - nsis
+  # Signed when a certificate is configured (CSC_LINK / CSC_KEY_PASSWORD or
+  # win.signtoolOptions). Unsigned builds work but show a SmartScreen warning
+  # on other machines.
+nsis:
+  oneClick: false
+  perMachine: false
+  allowToChangeInstallationDirectory: true
+  deleteAppDataOnUninstall: false
+
+mac:
+  target:
+    - dmg
+  category: public.app-category.productivity
+  hardenedRuntime: true
+
+linux:
+  target:
+    - AppImage
+    - deb
+  category: Utility
+
+# No update feed is configured: releases are manual downloads until one is
+# added here (GitHub release or a static host). The in-app update check is a
+# no-op without it.
+publish: null

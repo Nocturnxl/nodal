@@ -1,0 +1,200 @@
+import type { ExtensionField, ModelInfo } from '@shared/types';
+import { normalizeHttpError, RelayError, relayError } from '../net/errors';
+import { buildAuthHeaders, joinUrl, readBody } from '../net/http';
+import type { ProviderExtension } from './adapter';
+
+// Venice = the OpenAI-compatible adapter plus this module. Facts are from the
+// Venice API reference (read 2026-11-16) and a live GET /models response.
+
+function rec(v: unknown): Record<string, unknown> | undefined {
+  return v && typeof v === 'object' && !Array.isArray(v) ? (v as Record<string, unknown>) : undefined;
+}
+function bool(v: unknown): boolean | undefined {
+  return typeof v === 'boolean' ? v : undefined;
+}
+function num(v: unknown): number | undefined {
+  return typeof v === 'number' && Number.isFinite(v) ? v : undefined;
+}
+
+export function mapVeniceModel(raw: Record<string, unknown>, providerId: string): ModelInfo | null {
+  if (typeof raw.id !== 'string' || !raw.id) return null;
+  if (typeof raw.type === 'string' && raw.type !== 'text') return null; // chat picker shows text models only
+  const spec = rec(raw.model_spec) ?? {};
+  const caps = rec(spec.capabilities);
+  const constraints = rec(spec.constraints);
+  const pricing = rec(spec.pricing);
+  const inUsd = num(rec(pricing?.input)?.usd);
+  const outUsd = num(rec(pricing?.output)?.usd);
+  const temperature = num(rec(constraints?.temperature)?.default);
+  const topP = num(rec(constraints?.top_p)?.default);
+
+  return {
+    id: raw.id,
+    providerId,
+    displayName: typeof spec.name === 'string' && spec.name ? spec.name : raw.id,
+    contextTokens: num(spec.availableContextTokens) ?? num(raw.context_length),
+    maxOutputTokens: num(spec.maxCompletionTokens),
+    capabilities: caps
+      ? {
+          vision: bool(caps.supportsVision),
+          reasoning: bool(caps.supportsReasoning),
+          tools: bool(caps.supportsFunctionCalling),
+          structuredOutput: bool(caps.supportsResponseSchema),
+          webSearch: bool(caps.supportsWebSearch),
+        }
+      : {},
+    // Venice documents pricing as USD per million tokens.
+    pricing: inUsd !== undefined || outUsd !== undefined ? { inputPerM: inUsd, outputPerM: outUsd, currency: 'USD' } : undefined,
+    defaults: temperature !== undefined || topP !== undefined ? { temperature, topP } : undefined,
+    details: {
+      description: typeof spec.description === 'string' ? spec.description : undefined,
+      traits: Array.isArray(spec.traits) ? spec.traits.filter((t): t is string => typeof t === 'string') : undefined,
+      privacy: typeof spec.privacy === 'string' ? spec.privacy : undefined,
+      offline: bool(spec.offline),
+      beta: bool(spec.betaModel),
+    },
+    raw, // other flags (supportsReasoningEffort, supportsE2EE, ...) stay here for later use
+  };
+}
+
+const SEARCH_COST = 'Adds usage-based charges per the Venice docs.';
+
+function supportsXSearch(model: ModelInfo): boolean {
+  const caps = rec(rec(rec(model.raw)?.model_spec)?.capabilities);
+  if (typeof caps?.supportsXSearch === 'boolean') return caps.supportsXSearch;
+  return /grok/i.test(model.id);
+}
+
+export function veniceExtensions(model: ModelInfo): ExtensionField[] {
+  const fields: ExtensionField[] = [];
+  const { webSearch, reasoning } = model.capabilities;
+
+  if (webSearch !== false) {
+    fields.push({
+      key: 'enable_web_search',
+      label: 'Web search',
+      type: 'enum',
+      options: [
+        { value: 'off', label: 'Off' },
+        { value: 'auto', label: 'Auto' },
+        { value: 'on', label: 'On' },
+      ],
+      default: 'off',
+      costNote: SEARCH_COST,
+      unverified: webSearch === undefined,
+    });
+    fields.push({
+      key: 'enable_web_citations',
+      label: 'Web citations',
+      type: 'toggle',
+      default: false,
+      description: 'Ask the model to cite its web sources.',
+      showWhen: { key: 'enable_web_search', notEquals: 'off' },
+    });
+  }
+  fields.push({
+    key: 'enable_web_scraping',
+    label: 'Scrape URLs in message',
+    type: 'toggle',
+    default: false,
+    description: 'Fetches up to 5 URLs found in your message.',
+    costNote: SEARCH_COST,
+  });
+  fields.push({
+    key: 'include_venice_system_prompt',
+    label: 'Venice system prompt',
+    type: 'toggle',
+    // Off by default: measured live, it adds about 1,700 prompt tokens to every request.
+    default: false,
+    description: "Include Venice's default system prompt alongside yours. Adds about 1,700 prompt tokens to every request.",
+  });
+  if (reasoning !== false) {
+    fields.push({
+      key: 'strip_thinking_response',
+      label: 'Strip thinking from reply',
+      type: 'toggle',
+      default: false,
+      unverified: reasoning === undefined,
+    });
+    fields.push({
+      key: 'disable_thinking',
+      label: 'Disable thinking',
+      type: 'toggle',
+      default: false,
+      unverified: reasoning === undefined,
+    });
+  }
+  if (supportsXSearch(model)) {
+    fields.push({ key: 'enable_x_search', label: 'X search', type: 'toggle', default: false, costNote: SEARCH_COST });
+  }
+  fields.push({
+    key: 'character_slug',
+    label: 'Character slug',
+    type: 'string',
+    default: '',
+    description: 'Use a public Venice character.',
+    advanced: true,
+  });
+  return fields;
+}
+
+export const veniceExtension: ProviderExtension = {
+  mapModel: mapVeniceModel,
+  extensions: veniceExtensions,
+  requestIdHeaders: ['cf-ray'],
+
+  applyToRequest(body, req) {
+    // Only documented fields are sent, as an object (never model-name suffixes).
+    const fields = req.model ? veniceExtensions(req.model) : veniceExtensions({ id: req.modelId, providerId: '', displayName: req.modelId, capabilities: {} });
+    const value = (key: string) => req.extensions[key] ?? fields.find((f) => f.key === key)?.default;
+    const params: Record<string, unknown> = {};
+    for (const f of fields) {
+      const v = value(f.key);
+      if (f.showWhen && value(f.showWhen.key) === f.showWhen.notEquals) continue;
+      if (f.type === 'string') {
+        if (typeof v === 'string' && v.trim()) params[f.key] = v.trim();
+      } else if (v !== undefined) {
+        params[f.key] = v;
+      }
+    }
+    body.venice_parameters = params;
+    // Top-level field: routes a multi-turn chat to the same backend for cache hits.
+    body.prompt_cache_key = req.conversationId;
+  },
+
+  metaFromHeaders(headers) {
+    const balance: Record<string, string> = {};
+    const usd = headers.get('x-venice-balance-usd');
+    const diem = headers.get('x-venice-balance-diem');
+    if (usd) balance.USD = usd;
+    if (diem) balance.DIEM = diem;
+    const warning = headers.get('x-venice-model-deprecation-warning');
+    const date = headers.get('x-venice-model-deprecation-date') ?? undefined;
+    return {
+      balance: Object.keys(balance).length ? balance : undefined,
+      notice: warning || date ? { kind: 'deprecation', message: warning || 'This model is being retired.', date } : undefined,
+    };
+  },
+
+  // GET /models is readable without a key, so it cannot prove a key is valid.
+  // GET /api_keys/rate_limits needs auth: 200 for a good key, 401 for a bad
+  // one, 402 (payment challenge) when no credentials are recognised.
+  async validateKey(p) {
+    try {
+      const res = await p.http.request(joinUrl(p.config.baseUrl, '/api_keys/rate_limits'), {
+        headers: { Accept: 'application/json', ...buildAuthHeaders(p.config, p.apiKey) },
+        timeoutMs: p.timeouts.connectMs,
+      });
+      const text = await readBody(res, 15_000);
+      if (res.ok) return { ok: true };
+      const error = normalizeHttpError(res.status, text, res.headers, { requestIdHeaders: ['cf-ray'] });
+      if (res.status === 402 && /authentication required/i.test(text)) {
+        return { ok: false, error: { ...error, code: 'auth', message: 'Authentication required: Venice did not recognise this API key.' } };
+      }
+      if (res.status === 404) return { ok: false, unverifiable: true, error };
+      return { ok: false, error };
+    } catch (e) {
+      return { ok: false, error: e instanceof RelayError ? e.normalized : relayError('internal', String(e)).normalized };
+    }
+  },
+};

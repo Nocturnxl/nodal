@@ -1,0 +1,330 @@
+{
+  "name": "relay",
+  "productName": "Relay",
+  "version": "0.1.0",
+  "generatedAt": "2026-11-18T03:20:43+00:00",
+  "git": null,
+  "note": "The project folder is not a git repository, so there is no commit to pin this build to.",
+  "host": {
+    "os": "Windows 11 Pro 10.0.26300 x64",
+    "cpu": "AMD Ryzen 9 9950X3D 16-Core",
+    "ramGB": 62
+  },
+  "toolchain": {
+    "node": "v24.19.0",
+    "npm": "11.17.0",
+    "electron": "45.3.3",
+    "electron-vite": "6.0.0",
+    "vite": "8.3.8",
+    "typescript": "5.9.3",
+    "electron-builder": "26.18.0",
+    "vitest": "5.1.0",
+    "playwright": "1.65.1"
+  },
+  "scripts": {
+    "dev": "electron-vite dev",
+    "typecheck": "tsc --noEmit -p tsconfig.node.json && tsc --noEmit -p tsconfig.web.json",
+    "lint": "eslint src tests",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "notices": "node scripts/third-party-notices.mjs",
+    "verify:package": "node scripts/verify-package.mjs",
+    "perf:db": "vitest run --config vitest.perf.config.mts",
+    "perf:ui": "npm run bundle && playwright test -c playwright.perf.config.ts",
+    "smoke:venice": "vitest run --config vitest.live.config.mts",
+    "bundle": "electron-vite build",
+    "build": "npm run typecheck && npm run bundle && npm run test",
+    "e2e": "npm run bundle && playwright test",
+    "start": "electron-vite preview",
+    "mock": "node tests/mock/run.mts",
+    "rebuild": "electron-builder install-app-deps",
+    "dist": "npm run build && npm run notices && electron-builder",
+    "dist:dir": "npm run bundle && npm run notices && electron-builder --dir"
+  },
+  "runtimeDependencies": {
+    "better-sqlite3": {
+      "declared": "13.2.0",
+      "resolved": "13.2.0"
+    },
+    "electron-updater": {
+      "declared": "6.8.11",
+      "resolved": "6.8.11"
+    },
+    "fflate": {
+      "declared": "0.8.3",
+      "resolved": "0.8.3"
+    },
+    "zod": {
+      "declared": "4.6.7",
+      "resolved": "4.6.7"
+    }
+  },
+  "devDependencies": {
+    "@axe-core/playwright": {
+      "declared": "^4.14.0",
+      "resolved": "4.14.0"
+    },
+    "@electron/fuses": {
+      "declared": "^2.1.3",
+      "resolved": "2.1.3"
+    },
+    "@playwright/test": {
+      "declared": "1.65.1",
+      "resolved": "1.65.1"
+    },
+    "@tailwindcss/vite": {
+      "declared": "4.3.5",
+      "resolved": "4.3.5"
+    },
+    "@tanstack/react-virtual": {
+      "declared": "3.14.26",
+      "resolved": "3.14.26"
+    },
+    "@types/better-sqlite3": {
+      "declared": "^7.6.13",
+      "resolved": "7.6.13"
+    },
+    "@types/node": {
+      "declared": "^24.0.0",
+      "resolved": "24.19.2"
+    },
+    "@types/react": {
+      "declared": "^19.0.0",
+      "resolved": "19.3.0"
+    },
+    "@types/react-dom": {
+      "declared": "^19.0.0",
+      "resolved": "19.3.0"
+    },
+    "@vitejs/plugin-react": {
+      "declared": "6.3.0",
+      "resolved": "6.3.0"
+    },
+    "electron": {
+      "declared": "45.3.3",
+      "resolved": "45.3.3"
+    },
+    "electron-builder": {
+      "declared": "26.18.0",
+      "resolved": "26.18.0"
+    },
+    "electron-vite": {
+      "declared": "6.0.0",
+      "resolved": "6.0.0"
+    },
+    "eslint": {
+      "declared": "10.15.0",
+      "resolved": "10.15.0"
+    },
+    "eslint-plugin-react-hooks": {
+      "declared": "^7.1.1",
+      "resolved": "7.1.1"
+    },
+    "highlight.js": {
+      "declared": "^11.11.1",
+      "resolved": "11.12.0"
+    },
+    "katex": {
+      "declared": "0.19.1",
+      "resolved": "0.19.1"
+    },
+    "lucide-react": {
+      "declared": "1.73.0",
+      "resolved": "1.73.0"
+    },
+    "radix-ui": {
+      "declared": "1.8.1",
+      "resolved": "1.8.1"
+    },
+    "react": {
+      "declared": "19.3.1",
+      "resolved": "19.3.1"
+    },
+    "react-dom": {
+      "declared": "19.3.1",
+      "resolved": "19.3.1"
+    },
+    "react-markdown": {
+      "declared": "10.1.0",
+      "resolved": "10.1.0"
+    },
+    "rehype-highlight": {
+      "declared": "7.0.2",
+      "resolved": "7.0.2"
+    },
+    "rehype-katex": {
+      "declared": "7.0.1",
+      "resolved": "7.0.1"
+    },
+    "remark-gfm": {
+      "declared": "4.0.1",
+      "resolved": "4.0.1"
+    },
+    "remark-math": {
+      "declared": "6.0.0",
+      "resolved": "6.0.0"
+    },
+    "tailwindcss": {
+      "declared": "4.3.5",
+      "resolved": "4.3.5"
+    },
+    "typescript": {
+      "declared": "~5.9.0",
+      "resolved": "5.9.3"
+    },
+    "typescript-eslint": {
+      "declared": "8.73.0",
+      "resolved": "8.73.0"
+    },
+    "vite": {
+      "declared": "8.3.8",
+      "resolved": "8.3.8"
+    },
+    "vitest": {
+      "declared": "5.1.0",
+      "resolved": "5.1.0"
+    },
+    "zustand": {
+      "declared": "5.1.0",
+      "resolved": "5.1.0"
+    }
+  },
+  "lockfile": {
+    "path": "package-lock.json",
+    "bytes": 390271,
+    "sha256": "9fe5c1cb7299e8d0c068c86e572feedbc6b065841080cf646b00016b2e938314"
+  },
+  "lockedPackages": 708,
+  "configs": [
+    {
+      "path": "package.json",
+      "bytes": 2395,
+      "sha256": "47705d34a26130b4b94099992161afd7c84f63b14dede537dfe2018b8a22e089"
+    },
+    {
+      "path": "electron-builder.yml",
+      "bytes": 1588,
+      "sha256": "979afb9e0a41755d6fcb89c9833224513fa4b1f410b3155c36359d2fc875ae63"
+    },
+    {
+      "path": "electron.vite.config.ts",
+      "bytes": 2433,
+      "sha256": "1aef2ecf876d406f7d47b30f73877439a780663106f87a481a6a9d6b12f73541"
+    },
+    {
+      "path": "vitest.config.mts",
+      "bytes": 324,
+      "sha256": "6e0a4dd53a017b626c0f0f74128a3f82716d5dc69cf727fc94c83f3d91316c95"
+    },
+    {
+      "path": "playwright.config.ts",
+      "bytes": 399,
+      "sha256": "af49fddfeb351288c43eeed948f8bd9141741c80a6f7845238e05959b3227cbb"
+    },
+    {
+      "path": "tsconfig.base.json",
+      "bytes": 493,
+      "sha256": "3ce5297476cc749b554724d2dccdf7248033bc9bb1f7696aa23f63e9a9e6fa75"
+    },
+    {
+      "path": "tsconfig.node.json",
+      "bytes": 353,
+      "sha256": "0ac215fd8381534cea6a617457f1f9442d470bb6c18f54ab7e925464e36b9fc9"
+    },
+    {
+      "path": "tsconfig.web.json",
+      "bytes": 212,
+      "sha256": "f182141da9a2c62172579b893a3a47037e5f50e77daa1eba0c2c2ffb15d89181"
+    },
+    {
+      "path": "eslint.config.mjs",
+      "bytes": 904,
+      "sha256": "734409342140c280f195101ac6e865d694381bb78492dbd21188533a42045b7d"
+    },
+    {
+      "path": ".github/workflows/ci.yml",
+      "bytes": 1624,
+      "sha256": "c6525b89de3361f8bf4fa3a0acf93a42cc1005d10493562dafec263ea0d8a72c"
+    }
+  ],
+  "source": {
+    "files": 51,
+    "lines": 7955
+  },
+  "tests": {
+    "files": 18,
+    "lines": 2729
+  },
+  "bundle": {
+    "entryFiles": [
+      {
+        "path": "out/main/index.js",
+        "bytes": 118242,
+        "sha256": "e44e8a40d82a4753682aacf2e0952df81a7eaccbd05a9421438be6421eb28192"
+      },
+      {
+        "path": "out/preload/index.js",
+        "bytes": 3998,
+        "sha256": "8390e4cfc5e15e4a1125ce6cc29da95f8a2e2fe0d2165ffdaa1630cee5586e3e"
+      },
+      {
+        "path": "out/renderer/assets/index-Cgkw2frb.js",
+        "bytes": 2326432,
+        "sha256": "62ae66a76f014f22ecb6894686c03e99ad9ae007c69bc566d4d9e9acad3096fc"
+      },
+      {
+        "path": "out/renderer/assets/index-i0E25jdN.css",
+        "bytes": 64571,
+        "sha256": "a1f2061b603597572b25a64ebb6bbd869248431412172db5e0198d1bf546ee29"
+      },
+      {
+        "path": "out/renderer/index.html",
+        "bytes": 647,
+        "sha256": "c333bb020dbcc49bdf01a5455f369d44f13baf18a3f5f5038dd785e3fb28b86a"
+      }
+    ],
+    "rendererFileCount": 63,
+    "rendererTotalBytes": 3468222
+  },
+  "packaged": {
+    "target": "win32 x64, NSIS (unsigned)",
+    "artifacts": [
+      {
+        "path": "dist/Relay Setup 0.1.0.exe",
+        "bytes": 132451376,
+        "sha256": "87df3e8aa594bb9ac974cbe0e08d54bd21541d7b8b92cb46b199a1e9054144af"
+      },
+      {
+        "path": "dist/Relay Setup 0.1.0.exe.blockmap",
+        "bytes": 138531,
+        "sha256": "310fd0d590bbfa45e36f2b35d0f61c2a8f3ad2987fcfcf4c5761df3180abbc6a"
+      },
+      {
+        "path": "dist/win-unpacked/Relay.exe",
+        "bytes": 250093056,
+        "sha256": "65c74b4b522b7a9bbad98cf45efa3143e5ed423c1ac9f88e68e6e12de6d66e26"
+      },
+      {
+        "path": "dist/win-unpacked/resources/app.asar",
+        "bytes": 12837218,
+        "sha256": "f80a6481b37bd9665085bc33828260998433b05e58c9ce4321dc53a5edec1f2a"
+      }
+    ],
+    "asarUnpacked": [
+      "node_modules/better-sqlite3"
+    ],
+    "fuses": [
+      "RunAsNode is Disabled",
+      "EnableCookieEncryption is Enabled",
+      "EnableNodeOptionsEnvironmentVariable is Disabled",
+      "EnableNodeCliInspectArguments is Disabled",
+      "EnableEmbeddedAsarIntegrityValidation is Enabled",
+      "OnlyLoadAppFromAsar is Enabled",
+      "LoadBrowserProcessSpecificV8Snapshot is Disabled",
+      "GrantFileProtocolExtraPrivileges is Disabled",
+      "WasmTrapHandlers is Enabled"
+    ],
+    "signed": false,
+    "updateFeed": null
+  }
+}
