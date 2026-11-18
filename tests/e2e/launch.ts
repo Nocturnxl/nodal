@@ -3,10 +3,13 @@ import { resolve } from 'node:path';
 const ROOT = resolve(__dirname, '../..');
 
 /**
- * Arguments for launching the built app in tests. On Linux, Chromium picks its
- * key-storage backend from the desktop session; under a bare virtual display
- * it would fall back to plain text, which Relay refuses. Name the backend.
+ * Arguments for launching the built app in tests.
+ *
+ * Playwright starts Electron with --password-store=basic. On Linux that
+ * selects plain-text key storage, which Relay refuses, so a Linux run must set
+ * RELAY_PASSWORD_STORE=gnome-libsecret (with an unlocked keyring) to name the
+ * real backend. The CI workflow does this.
  */
 export function appArgs(): string[] {
-  return process.platform === 'linux' ? [ROOT, '--password-store=gnome-libsecret'] : [ROOT];
+  return [ROOT];
 }

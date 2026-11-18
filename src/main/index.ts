@@ -46,6 +46,15 @@ protocol.registerSchemesAsPrivileged([{ scheme: 'app', privileges: { standard: t
 // Test runs point the app at a throwaway profile.
 if (process.env.RELAY_USER_DATA) app.setPath('userData', process.env.RELAY_USER_DATA);
 
+// Linux only: name the key-storage backend explicitly. Test drivers launch
+// Chromium with --password-store=basic, which would make Relay refuse to store
+// keys; a desktop session Chromium does not recognise has the same effect.
+// Only real keyrings can be named here, so this can never weaken storage.
+const store = process.env.RELAY_PASSWORD_STORE;
+if (process.platform === 'linux' && store && ['gnome-libsecret', 'kwallet', 'kwallet5', 'kwallet6'].includes(store)) {
+  app.commandLine.appendSwitch('password-store', store);
+}
+
 let mainWindow: BrowserWindow | null = null;
 let streams: StreamManager | null = null;
 

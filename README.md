@@ -91,6 +91,8 @@ Everything is in the Electron user-data folder (Settings → Data → Open folde
 
 Set `RELAY_USER_DATA` to run against a different folder. The tests use this.
 
+On Linux, `RELAY_PASSWORD_STORE` (`gnome-libsecret`, `kwallet`, `kwallet5` or `kwallet6`) names the keyring to use when the desktop session is one Chromium does not recognise. It cannot select plain-text storage.
+
 ## What is implemented
 
 All P0 and P1 requirements from the specification (F1 to F16): provider management from presets or custom URLs, encrypted key entry with validation, model discovery with a 24-hour cache and hand-entered model IDs, streaming chat with Stop, persistent conversations with full-text search, Markdown with code highlighting and optional math, per-conversation system prompt and sampling controls, regenerate, edit-and-resend and branch switching, provider extension controls, a separate reasoning block, image attachments, token counts with balance and rate-limit readouts, Markdown / JSON / ZIP export and import, themes and keyboard shortcuts, and several providers in one model picker.

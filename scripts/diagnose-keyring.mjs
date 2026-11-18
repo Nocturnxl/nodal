@@ -7,7 +7,9 @@ import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 
 const root = resolve(import.meta.dirname, '..');
-const variants = [[], ['--password-store=gnome-libsecret'], ['--password-store=basic']];
+// Note: Playwright itself adds --password-store=basic, so the switch value seen
+// here is the driver's unless RELAY_PASSWORD_STORE names a real backend.
+const variants = [[]];
 
 for (const extra of variants) {
   const userData = mkdtempSync(join(tmpdir(), 'relay-keyring-'));

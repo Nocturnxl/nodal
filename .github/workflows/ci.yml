@@ -33,8 +33,8 @@ jobs:
       - name: End-to-end (Linux, virtual display and keyring)
         if: runner.os == 'Linux'
         env:
-          # Chromium chooses its key-storage backend from the desktop session name.
-          XDG_CURRENT_DESKTOP: GNOME
+          # The test driver starts Chromium with --password-store=basic; name the real backend.
+          RELAY_PASSWORD_STORE: gnome-libsecret
         run: |
           sudo apt-get update && sudo apt-get install -y xvfb gnome-keyring dbus-x11 libsecret-tools
           xvfb-run --auto-servernum dbus-run-session -- bash -ec '
