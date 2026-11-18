@@ -36,7 +36,8 @@ export function Composer({ conversation, model, providerName }: { conversation: 
     ref.current?.focus();
   }, [focusTick, id]);
 
-  useEffect(() => setPending([]), [id]);
+  const idRef = useRef(id);
+  idRef.current = id;
 
   useLayoutEffect(() => {
     const el = ref.current;
@@ -45,31 +46,57 @@ export function Composer({ conversation, model, providerName }: { conversation: 
     el.style.height = `${Math.min(el.scrollHeight, 260)}px`;
   }, [draft]);
 
-  const addFiles = async (files: Iterable<File>) => {
-    for (const f of files) {
-      if (!IMAGE_TYPES.includes(f.type)) continue;
-      try {
-        const data = new Uint8Array(await f.arrayBuffer());
-        const added = await relay.attachments.add(f.type, data);
-        const preview = URL.createObjectURL(new Blob([data], { type: f.type }));
-        setPending((p) => (p.some((x) => x.sha256 === added.sha256) ? p : [...p, { ...added, preview }]));
-      } catch (e) {
-        toastError('Could not attach the image', e);
+  // Storing an attachment is asynchronous. `adding` tracks work in flight and
+  // `pendingRef` mirrors the list, so pressing Enter straight after attaching
+  // waits for the image instead of sending the message without it.
+  const adding = useRef<Promise<void>>(Promise.resolve());
+  const pendingRef = useRef<Pending[]>([]);
+  const updatePending = (fn: (list: Pending[]) => Pending[]) => {
+    pendingRef.current = fn(pendingRef.current);
+    setPending(pendingRef.current);
+  };
+  useEffect(() => {
+    pendingRef.current = [];
+    setPending([]);
+  }, [id]);
+
+  const addFiles = (files: Iterable<File>): Promise<void> => {
+    const list = [...files].filter((f) => IMAGE_TYPES.includes(f.type));
+    const forConversation = id;
+    adding.current = adding.current.then(async () => {
+      for (const f of list) {
+        try {
+          const data = new Uint8Array(await f.arrayBuffer());
+          const added = await relay.attachments.add(f.type, data);
+          if (forConversation !== idRef.current) return; // the user moved to another chat meanwhile
+          const preview = URL.createObjectURL(new Blob([data], { type: f.type }));
+          updatePending((p) => (p.some((x) => x.sha256 === added.sha256) ? p : [...p, { ...added, preview }]));
+        } catch (e) {
+          toastError('Could not attach the image', e);
+        }
       }
-    }
+    });
+    return adding.current;
   };
 
+  const submitting = useRef(false);
   const submit = async () => {
-    if (streaming) return;
-    const text = draft;
-    if (!text.trim() && pending.length === 0) return;
-    const atts = pending;
-    setDraft(id, '');
-    setPending([]);
-    const ok = await send(text, atts);
-    if (!ok) {
-      setDraft(id, text);
-      setPending(atts);
+    if (streaming || submitting.current) return;
+    submitting.current = true;
+    try {
+      await adding.current;
+      const text = useStore.getState().drafts[id] ?? '';
+      const atts = pendingRef.current;
+      if (!text.trim() && atts.length === 0) return;
+      setDraft(id, '');
+      updatePending(() => []);
+      const ok = await send(text, atts);
+      if (!ok) {
+        setDraft(id, text);
+        updatePending(() => atts);
+      }
+    } finally {
+      submitting.current = false;
     }
   };
 
@@ -100,7 +127,7 @@ export function Composer({ conversation, model, providerName }: { conversation: 
                 <button
                   type="button"
                   aria-label="Remove attachment"
-                  onClick={() => setPending((list) => list.filter((x) => x.sha256 !== p.sha256))}
+                  onClick={() => updatePending((list) => list.filter((x) => x.sha256 !== p.sha256))}
                   className="absolute -top-1.5 -right-1.5 flex h-5 w-5 items-center justify-center rounded-full border border-line bg-raised text-muted hover:text-fg"
                 >
                   <X size={11} />

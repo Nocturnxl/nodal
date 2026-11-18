@@ -119,6 +119,29 @@ test('attach an image, send it, and deleting the chat deletes the image file', a
   await app.close();
 });
 
+test('pressing Enter straight after attaching still sends the image', async () => {
+  const dir = profile();
+  const { app, page } = await launch(dir);
+  await connectMock(page);
+  await composer(page).fill('Sent in a hurry');
+  // Choose the file and press Enter in the same instant, before the app has finished storing the image.
+  await page.evaluate((b64) => {
+    const bytes = Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
+    const dt = new DataTransfer();
+    dt.items.add(new File([bytes], 'pixel.png', { type: 'image/png' }));
+    const input = document.querySelector('input[type="file"]') as HTMLInputElement;
+    input.files = dt.files;
+    input.dispatchEvent(new Event('change', { bubbles: true }));
+    document.querySelector('textarea[aria-label="Message"]')!.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true }));
+  }, PNG.toString('base64'));
+  const reply = page.locator('[data-role="assistant"]').last();
+  await expect(reply).toHaveAttribute('data-finish', 'stop', { timeout: 30_000 });
+  await expect(reply).toContainText('You said: Sent in a hurry [image]');
+  const sent = mock.requests.at(-1)!.body.messages.at(-1);
+  expect(sent.content.map((p: { type: string }) => p.type)).toEqual(['text', 'image_url']);
+  await app.close();
+});
+
 test('math renders with KaTeX when switched on, and stays as text when off', async () => {
   const dir = profile();
   const { app, page } = await launch(dir);
