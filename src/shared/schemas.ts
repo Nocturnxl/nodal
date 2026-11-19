@@ -4,6 +4,7 @@ import { z } from 'zod';
 // handler runs; nothing from the renderer is trusted.
 
 const id = z.string().min(1).max(200);
+const passphrase = z.string().min(1).max(1024);
 const headerName = z.string().regex(/^[A-Za-z0-9!#$%&'*+.^_`|~-]+$/, 'Invalid header name').max(100);
 
 export const providerConfigSchema = z.object({
@@ -119,4 +120,8 @@ export const schemas = {
   }),
   attachmentGet: z.object({ sha256: z.string().regex(/^[a-f0-9]{64}$/) }),
   openExternal: z.object({ url: z.string().max(4000) }),
+  passphrase: z.object({ passphrase }),
+  passphraseChange: z.object({ current: passphrase, next: passphrase }),
+  exportAll: z.object({ passphrase: passphrase.optional() }),
+  importFile: z.object({ unlock: z.object({ token: id, passphrase }).optional() }),
 };

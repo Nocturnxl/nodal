@@ -19,7 +19,7 @@ asar: true
 npmRebuild: false
 # Native modules cannot load from inside the archive.
 asarUnpack:
-  - node_modules/better-sqlite3/**
+  - node_modules/better-sqlite3-multiple-ciphers/**
 
 # Electron fuses, flipped at packaging time (spec section 5). With these set
 # the binary cannot be repurposed as a generic Node runtime, ignores

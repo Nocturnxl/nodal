@@ -294,6 +294,19 @@ export interface ImportResult {
   skipped: number;
 }
 
+/** A passphrase-protected export was chosen: ask for its passphrase and call import again with the token. */
+export interface ImportLocked {
+  locked: true;
+  token: string;
+}
+
+export interface VaultStatus {
+  /** Chats on this computer are encrypted with a passphrase. */
+  enabled: boolean;
+  /** The passphrase has been given this session (always true when encryption is off). */
+  unlocked: boolean;
+}
+
 export interface ProviderUsage {
   conversations: number;
 }

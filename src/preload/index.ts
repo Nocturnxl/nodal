@@ -53,12 +53,19 @@ const api: NodalApi = {
   },
   data: {
     exportConversation: (id, format) => invoke(CH.exportConversation, { id, format }),
-    exportAll: () => invoke(CH.exportAll),
-    importFile: () => invoke(CH.importFile),
+    exportAll: (passphrase) => invoke(CH.exportAll, { passphrase }),
+    importFile: (unlock) => invoke(CH.importFile, { unlock }),
   },
   attachments: {
     add: (mime, data) => invoke(CH.attachmentAdd, { mime, data }),
     get: (sha256) => invoke(CH.attachmentGet, { sha256 }),
+  },
+  vault: {
+    status: () => invoke(CH.vaultStatus),
+    unlock: (passphrase) => invoke(CH.vaultUnlock, { passphrase }),
+    enable: (passphrase) => invoke(CH.vaultEnable, { passphrase }),
+    changePassphrase: (current, next) => invoke(CH.vaultChange, { current, next }),
+    disable: (passphrase) => invoke(CH.vaultDisable, { passphrase }),
   },
   app: {
     info: () => invoke(CH.appInfo),

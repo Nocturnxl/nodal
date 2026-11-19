@@ -29,7 +29,7 @@
     "dist:dir": "npm run bundle && npm run notices && electron-builder --dir"
   },
   "dependencies": {
-    "better-sqlite3": "13.2.0",
+    "better-sqlite3-multiple-ciphers": "13.2.0",
     "electron-updater": "6.8.11",
     "fflate": "0.8.3",
     "zod": "4.6.7"
@@ -40,7 +40,6 @@
     "@playwright/test": "1.65.1",
     "@tailwindcss/vite": "4.3.5",
     "@tanstack/react-virtual": "3.14.26",
-    "@types/better-sqlite3": "^7.6.13",
     "@types/node": "^24.0.0",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",

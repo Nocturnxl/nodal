@@ -1,10 +1,13 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
+import type { VaultStatus } from '@shared/types';
 import { ChatView } from './components/ChatView';
 import { ModelPicker } from './components/ModelPicker';
+import { Unlock } from './components/Security';
 import { SettingsDialog } from './components/SettingsDialog';
 import { Sidebar } from './components/Sidebar';
 import { Toasts } from './components/Toasts';
 import { Welcome } from './components/Welcome';
+import { nodal } from './lib/ipc';
 import { useStore } from './store';
 
 function useTheme() {
@@ -24,6 +27,7 @@ function useShortcuts() {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       const s = useStore.getState();
+      if (!s.ready) return; // still locked or starting
       const mod = e.ctrlKey || e.metaKey;
       const key = e.key.toLowerCase();
       if (mod && !e.shiftKey && !e.altKey) {
@@ -63,10 +67,17 @@ export function App() {
   useTheme();
   useShortcuts();
 
+  // Encrypted chats stay closed until the passphrase is given, so nothing else is asked of main before then.
+  const [vault, setVault] = useState<VaultStatus | null>(null);
   useEffect(() => {
-    void init().catch((e) => useStore.getState().toastError('NODAL could not start', e));
-  }, [init]);
+    void nodal.vault.status().then(setVault);
+  }, []);
+  const unlocked = vault?.unlocked ?? false;
+  useEffect(() => {
+    if (unlocked) void init().catch((e) => useStore.getState().toastError('NODAL could not start', e));
+  }, [init, unlocked]);
 
+  if (vault && !vault.unlocked) return <Unlock onUnlocked={() => setVault({ enabled: true, unlocked: true })} />;
   if (!ready) return <div className="h-full bg-bg" />;
   return (
     <>

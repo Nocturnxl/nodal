@@ -46,7 +46,7 @@ function encode(err: NormalizedError): Error {
  * NormalizedError that survives the IPC boundary.
  */
 export function handle<S extends z.ZodType>(
-  ctx: AppContext,
+  ctx: Pick<AppContext, 'trustedOrigins' | 'log'>,
   channel: string,
   schema: S,
   fn: (payload: z.output<S>, event: IpcMainInvokeEvent) => unknown,

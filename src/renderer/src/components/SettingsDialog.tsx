@@ -7,6 +7,7 @@ import { parseIpcError, nodal } from '../lib/ipc';
 import { relativeTime } from '../lib/tree';
 import { useStore, type SettingsSection } from '../store';
 import { ProviderForm } from './ProviderForm';
+import { EncryptedExport, ImportButton, SecuritySettings } from './Security';
 import { Badge, Button, ErrorDetails, IconButton, Label, Logo, Segmented, Switch, cx } from './ui';
 import { PresetList } from './Welcome';
 
@@ -14,6 +15,7 @@ const SECTIONS: { id: SettingsSection; label: string }[] = [
   { id: 'providers', label: 'Providers' },
   { id: 'appearance', label: 'Appearance' },
   { id: 'data', label: 'Data' },
+  { id: 'security', label: 'Security' },
   { id: 'network', label: 'Network' },
   { id: 'about', label: 'About' },
 ];
@@ -337,36 +339,37 @@ function Data() {
           ))}
         </span>
       </Row>
-      <Row title="Export everything" hint="A ZIP of all conversations, provider settings and images. Keys are never exported.">
-        <Button
-          onClick={() =>
-            guard(async () => {
-              const path = await nodal.data.exportAll();
-              if (path) toast({ kind: 'success', title: `Exported to ${path}` });
-            })
-          }
-        >
-          Export ZIP
-        </Button>
+      <Row
+        title="Export everything"
+        hint="All conversations, provider settings and images. Keys are never exported. A ZIP is not encrypted, even when encryption is on; an encrypted export is protected by a passphrase of its own."
+      >
+        <span className="flex gap-2">
+          <Button
+            onClick={() =>
+              guard(async () => {
+                const path = await nodal.data.exportAll();
+                if (path) toast({ kind: 'success', title: `Exported to ${path}` });
+              })
+            }
+          >
+            Export ZIP
+          </Button>
+          <EncryptedExport />
+        </span>
       </Row>
-      <Row title="Import" hint="Merges a NODAL ZIP or JSON export. Items that already exist are skipped.">
-        <Button
-          onClick={() =>
-            guard(async () => {
-              const r = await nodal.data.importFile();
-              if (!r) return;
-              await refresh();
-              toast({
-                kind: 'success',
-                title: `Imported ${r.conversations} conversation${r.conversations === 1 ? '' : 's'} and ${r.messages} messages${r.skipped ? `; ${r.skipped} skipped` : ''}`,
-              });
-            })
-          }
-        >
-          Import file
-        </Button>
+      <Row title="Import" hint="Merges a NODAL export: ZIP, JSON or encrypted. Items that already exist are skipped.">
+        <ImportButton
+          label="Import file"
+          onImported={async (r) => {
+            await refresh();
+            toast({
+              kind: 'success',
+              title: `Imported ${r.conversations} conversation${r.conversations === 1 ? '' : 's'} and ${r.messages} messages${r.skipped ? `; ${r.skipped} skipped` : ''}`,
+            });
+          }}
+        />
       </Row>
-      <Row title="Data folder" hint="The database, encrypted key file, attachments, backups and logs.">
+      <Row title="Data folder" hint="The database, the vault and key files, attachments, backups and logs.">
         <Button onClick={() => void nodal.app.openDataFolder()}>Open folder</Button>
       </Row>
     </div>
@@ -482,6 +485,7 @@ export function SettingsDialog() {
             {section === 'providers' && <Providers key={providerId ?? 'none'} />}
             {section === 'appearance' && <Appearance />}
             {section === 'data' && <Data />}
+            {section === 'security' && <SecuritySettings />}
             {section === 'network' && <Network />}
             {section === 'about' && <About />}
           </div>

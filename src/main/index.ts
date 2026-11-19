@@ -1,20 +1,23 @@
 import { app, BrowserWindow, dialog, Menu, nativeTheme, protocol, safeStorage, session } from 'electron';
+import { existsSync } from 'node:fs';
 import { readFile } from 'node:fs/promises';
 import { extname, join, normalize, sep } from 'node:path';
 import { CH } from '@shared/api';
 import type { ChatEventBatch } from '@shared/types';
 import { AttachmentStore } from './attachments';
 import { StreamManager } from './chat/streams';
-import { MigrationError, openDatabase } from './db';
+import { isPlainDatabase, MigrationError, openDatabase, rekeyDatabase, removeBackups } from './db';
 import { Store } from './db/store';
 import { registerChatIpc } from './ipc/chat';
 import { registerDataIpc } from './ipc/data';
 import { registerProviderIpc } from './ipc/providers';
 import type { AppContext } from './ipc/register';
+import { registerVaultIpc } from './ipc/vault';
 import { createLogger } from './log';
 import { ModelService } from './models';
 import { DEFAULT_TIMEOUTS, Http, type Timeouts } from './net/http';
 import { KeyStore } from './secrets/keystore';
+import { Vault, type VaultKeys } from './secrets/vault';
 import { maybeCheckForUpdates } from './updater';
 
 const APP_ORIGIN = 'app://nodal';
@@ -165,17 +168,10 @@ function start(): void {
   const userData = app.getPath('userData');
   const logs = join(userData, 'logs');
   const log = createLogger(logs);
+  const trustedOrigins = DEV_ORIGIN ? [APP_ORIGIN, DEV_ORIGIN] : [APP_ORIGIN];
+  const vault = new Vault(userData);
+  let ctx: AppContext | null = null;
 
-  let store: Store;
-  try {
-    store = new Store(openDatabase(userData));
-  } catch (e) {
-    const message = e instanceof MigrationError ? e.message : `The database could not be opened: ${e instanceof Error ? e.message : String(e)}`;
-    log.error('database open failed', { message });
-    dialog.showErrorBox('NODAL cannot start', message);
-    app.exit(1);
-    return;
-  }
   // An unexpected error in the main process: record it, tell the user where
   // the log is, and close cleanly so in-flight replies are saved as interrupted.
   let crashing = false;
@@ -212,89 +208,129 @@ ${logs}`);
     if (details.reason !== 'clean-exit') log.warn('helper process ended', { type: details.type, reason: details.reason });
   });
 
-  const interrupted = store.markInterrupted();
-  if (interrupted) log.info('marked interrupted replies', { count: interrupted });
-
-  const keys = new KeyStore(join(userData, 'keys.json'), safeStorage);
-  const attachments = new AttachmentStore(join(userData, 'attachments'));
-  // Images attached but never sent, or left behind by an older version, are removed after a day.
-  const orphans = attachments.gc(store.attachmentHashesInUse(), 24 * 60 * 60 * 1000);
-  if (orphans) log.info('removed unreferenced attachments', { count: orphans });
-
-  // Provider traffic uses its own in-memory session: no cookies or cache on
-  // disk, the system proxy and certificate store, and an egress allowlist of
-  // configured provider hosts.
-  const netSession = session.fromPartition('nodal-net', { cache: false });
-  netSession.webRequest.onBeforeRequest((details, callback) => {
-    let allowed = false;
+  /**
+   * Opens the database and starts everything that needs it. With encryption
+   * off this runs at once; with it on, it runs when the passphrase is given.
+   */
+  const boot = (vaultKeys: VaultKeys | null): void => {
+    let store: Store;
     try {
-      const host = new URL(details.url).host;
-      allowed = store.listProviders().some((p) => {
-        try {
-          return new URL(p.baseUrl).host === host;
-        } catch {
-          return false;
-        }
-      });
-    } catch {
-      allowed = false;
+      if (!vaultKeys && existsSync(join(userData, 'nodal.db')) && !isPlainDatabase(userData)) {
+        throw new Error('it is encrypted, but vault.json (which holds its sealed key) is missing from the data folder. Put vault.json back from a backup to open your chats');
+      }
+      if (vaultKeys && isPlainDatabase(userData)) {
+        // Turning encryption on was interrupted after the key was sealed: finish it.
+        const plain = openDatabase(userData);
+        rekeyDatabase(plain, vaultKeys.db);
+        plain.close();
+        removeBackups(userData);
+        log.info('finished an interrupted encryption');
+      }
+      store = new Store(openDatabase(userData, undefined, undefined, vaultKeys?.db));
+    } catch (e) {
+      const message = e instanceof MigrationError ? e.message : `The database could not be opened: ${e instanceof Error ? e.message : String(e)}.`;
+      log.error('database open failed', { message });
+      dialog.showErrorBox('NODAL cannot start', message);
+      app.exit(1);
+      throw e;
     }
-    if (!allowed) log.warn('blocked outbound request to a host that is not a configured provider');
-    callback({ cancel: !allowed });
-  });
-  netSession.setPermissionRequestHandler((_wc, _p, cb) => cb(false));
 
-  const http = new Http((url, init) => netSession.fetch(url, init as Parameters<typeof netSession.fetch>[1]), `NODAL/${app.getVersion()}`);
-  const timeouts = (): Timeouts => ({ ...DEFAULT_TIMEOUTS, firstByteMs: store.getSettings().firstByteTimeoutSec * 1000 });
+    const interrupted = store.markInterrupted();
+    if (interrupted) log.info('marked interrupted replies', { count: interrupted });
 
-  const applyNetworkSettings = () => {
-    const { proxy, updateCheck } = store.getSettings();
-    void netSession.setProxy(proxy.trim() ? { mode: 'fixed_servers', proxyRules: proxy.trim() } : { mode: 'system' }).catch((e) => {
-      log.warn('proxy setting rejected', { error: String(e) });
+    const keys = new KeyStore(join(userData, 'keys.json'), safeStorage);
+    const attachments = new AttachmentStore(join(userData, 'attachments'), vaultKeys);
+    // Picks up any image a previous, interrupted switch left in the other form.
+    if (vaultKeys) attachments.convert(vaultKeys);
+    // Images attached but never sent, or left behind by an older version, are removed after a day.
+    const orphans = attachments.gc(store.attachmentHashesInUse(), 24 * 60 * 60 * 1000);
+    if (orphans) log.info('removed unreferenced attachments', { count: orphans });
+
+    // Provider traffic uses its own in-memory session: no cookies or cache on
+    // disk, the system proxy and certificate store, and an egress allowlist of
+    // configured provider hosts.
+    const netSession = session.fromPartition('nodal-net', { cache: false });
+    netSession.webRequest.onBeforeRequest((details, callback) => {
+      let allowed = false;
+      try {
+        const host = new URL(details.url).host;
+        allowed = store.listProviders().some((p) => {
+          try {
+            return new URL(p.baseUrl).host === host;
+          } catch {
+            return false;
+          }
+        });
+      } catch {
+        allowed = false;
+      }
+      if (!allowed) log.warn('blocked outbound request to a host that is not a configured provider');
+      callback({ cancel: !allowed });
     });
-    void maybeCheckForUpdates(updateCheck, log);
+    netSession.setPermissionRequestHandler((_wc, _p, cb) => cb(false));
+
+    const http = new Http((url, init) => netSession.fetch(url, init as Parameters<typeof netSession.fetch>[1]), `NODAL/${app.getVersion()}`);
+    const timeouts = (): Timeouts => ({ ...DEFAULT_TIMEOUTS, firstByteMs: store.getSettings().firstByteTimeoutSec * 1000 });
+
+    const applyNetworkSettings = () => {
+      const { proxy, updateCheck } = store.getSettings();
+      void netSession.setProxy(proxy.trim() ? { mode: 'fixed_servers', proxyRules: proxy.trim() } : { mode: 'system' }).catch((e) => {
+        log.warn('proxy setting rejected', { error: String(e) });
+      });
+      void maybeCheckForUpdates(updateCheck, log);
+    };
+
+    streams = new StreamManager({
+      store,
+      keys,
+      http,
+      attachments,
+      log,
+      timeouts,
+      emit: (batch: ChatEventBatch) => {
+        if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send(CH.chatEvent, batch);
+      },
+    });
+
+    ctx = {
+      store,
+      keys,
+      attachments,
+      streams,
+      models: new ModelService(store, keys, http, timeouts),
+      log,
+      paths: { userData, logs },
+      trustedOrigins,
+      window: () => mainWindow,
+      applyNetworkSettings,
+    };
+    registerProviderIpc(ctx);
+    registerChatIpc(ctx);
+    registerDataIpc(ctx);
+    applyNetworkSettings();
   };
 
-  streams = new StreamManager({
-    store,
-    keys,
-    http,
-    attachments,
-    log,
-    timeouts,
-    emit: (batch: ChatEventBatch) => {
-      if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send(CH.chatEvent, batch);
-    },
-  });
-
-  const ctx: AppContext = {
-    store,
-    keys,
-    attachments,
-    streams,
-    models: new ModelService(store, keys, http, timeouts),
-    log,
-    paths: { userData, logs },
-    trustedOrigins: DEV_ORIGIN ? [APP_ORIGIN, DEV_ORIGIN] : [APP_ORIGIN],
-    window: () => mainWindow,
-    applyNetworkSettings,
-  };
-  registerProviderIpc(ctx);
-  registerChatIpc(ctx);
-  registerDataIpc(ctx);
+  registerVaultIpc({ vault, userData, log, trustedOrigins, ctx: () => ctx, boot });
+  // With encryption on, the window opens on the unlock screen and the database stays closed until then.
+  if (!vault.enabled) {
+    try {
+      boot(null);
+    } catch {
+      return; // already reported
+    }
+  }
 
   serveApp();
   lockDownRendererSession();
   buildMenu();
-  applyNetworkSettings();
   createWindow();
-  log.info('started', { version: app.getVersion(), electron: process.versions.electron, packaged: app.isPackaged });
+  log.info('started', { version: app.getVersion(), electron: process.versions.electron, packaged: app.isPackaged, encrypted: vault.enabled });
 
   app.on('before-quit', () => {
     // Closing mid-stream aborts all requests and leaves rows `interrupted`.
     streams?.abortAll();
     try {
-      store.db.close();
+      ctx?.store.db.close();
     } catch {
       /* already closed */
     }

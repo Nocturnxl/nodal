@@ -1,6 +1,6 @@
 # NODAL build manifest
 
-Version 0.1.0, generated 2026-11-18T05:31:07+00:00. Machine-readable copy: `build-manifest.json`.
+Version 0.1.0, generated 2026-11-19T09:34:50+00:00. Machine-readable copy: `build-manifest.json`.
 
 The project folder is not a git repository, so this build is pinned by the lockfile hash and the artifact hashes below, not by a commit.
 
@@ -24,12 +24,12 @@ Build host: Windows 11 Pro 10.0.26300 x64, AMD Ryzen 9 9950X3D 16-Core, 62 GB RA
 
 | Package | Version |
 | --- | --- |
-| better-sqlite3 | 13.2.0 |
+| better-sqlite3-multiple-ciphers | 13.2.0 |
 | electron-updater | 6.8.11 |
 | fflate | 0.8.3 |
 | zod | 4.6.7 |
 
-Everything else (32 direct dev dependencies, 708 packages in the lockfile) is build-time only. React, Zustand, Radix, Tailwind and the Markdown libraries are bundled into the renderer.
+Everything else (31 direct dev dependencies, 707 packages in the lockfile) is build-time only. React, Zustand, Radix, Tailwind and the Markdown libraries are bundled into the renderer.
 
 ## Build steps
 
@@ -48,16 +48,16 @@ Everything else (32 direct dev dependencies, 708 packages in the lockfile) is bu
 
 | File | Size | SHA-256 |
 | --- | ---: | --- |
-| `dist/NODAL Setup 0.1.0.exe` | 127.2 MB | `8d701e4fc3d6ac52e78b617808296904431d3c6796dd9fd0868199f90a9e22f5` |
-| `dist/NODAL Setup 0.1.0.exe.blockmap` | 137 KB | `ab3876c64aff63dddd213110a0143e8a3aeac0f302484c2b95d61bf7a56adb02` |
-| `dist/win-unpacked/NODAL.exe` | 238.6 MB | `92e2290dc7f59cc9ff5f63e1064c3675222d29712874cb715dcaa0577eb9bddb` |
-| `dist/win-unpacked/resources/app.asar` | 12.3 MB | `21e0d8def81b53f049839de8a9eeb811c609c58b7de6ee5b6d3c93f8afd087de` |
-| `out/main/index.js` | 116 KB | `deea193020c2c86f0f9931693a3f144c4bda44bb5a97da7bd6dfc79dad2a6827` |
-| `out/preload/index.js` | 4 KB | `80b9ee4f7f14221128d17f4a831feaced5ea7bd0bd6928c9914eee58b6709697` |
-| `out/renderer/assets/index-kpyRYBGa.js` | 2.2 MB | `c5f27c03df85db68ebc3bd1e23cf814a3bcd1300b04a625af214cedbd66a9d1f` |
-| `out/renderer/assets/index-zxHsCkBG.css` | 67 KB | `0e689d3d9de17f222e5153f30368e2323be5ec167f9a8d704398a107561b5630` |
-| `out/renderer/index.html` | 1 KB | `1f304f59ddde8ad36e6aa845dbbee5ae038743cf74434c1b1474672a936433bf` |
-| `package-lock.json` | 381 KB | `300adde9a62f6cde01ee88399a417e8c01e81c0f7e261d5a0a3243327611254d` |
+| `dist/NODAL Setup 0.1.0.exe` | 128.9 MB | `d571761e86f2c7a82a8f2ff1b8d7e552c81147542b611bc89eaa13950ea75727` |
+| `dist/NODAL Setup 0.1.0.exe.blockmap` | 140 KB | `0a4ac2bade240184e9ef681824184efd9290097668b0c4f7f8c5b1d6c3fb153e` |
+| `dist/win-unpacked/NODAL.exe` | 238.6 MB | `1538cfa84d68edc2c2a4373a31c44692502a84e19641e9064399fed65c6b8cf8` |
+| `dist/win-unpacked/resources/app.asar` | 12.4 MB | `40d1a2cf16d549afc1ceb92e5f35dcc84c916a58154e7c7858731a60866486bf` |
+| `out/main/index.js` | 133 KB | `ed849271bf6574e22306cac3ad4643c3c1bcbd48287943a0610dcef9df88bb51` |
+| `out/preload/index.js` | 4 KB | `f8c5e3eec8b60c08e20d7a2c56a4a4abb47d72c82604b0265c67fd0024747757` |
+| `out/renderer/assets/index-CGDxmLCc.js` | 2.2 MB | `7098f65e02bdc956b731330139263f432a5bc2f17a85706e6d7ccd2e2a466253` |
+| `out/renderer/assets/index-D5rRQ8Hm.css` | 68 KB | `5d41c2a33a410251f88fdbdaf0e3b66844229b66cb7d6ad0f548b522e0327638` |
+| `out/renderer/index.html` | 1 KB | `8c8219a0a1aa3a50c218d58bb79b93fc6edb454712ff42eac18c9629666bdbb1` |
+| `package-lock.json` | 381 KB | `c06380b4479af62b50fd4b6ddce063bf8f3845cadf051212542b58f5f6533daf` |
 
 The renderer bundle is 65 files, 3.4 MB in total. Most of the file count is KaTeX fonts.
 
@@ -77,5 +77,5 @@ The installer is unsigned and has no update feed. It will show a SmartScreen war
 
 ## Size of the code
 
-- Source: 53 files, 8062 lines
-- Tests: 19 files, 2784 lines
+- Source: 56 files, 9070 lines
+- Tests: 21 files, 3373 lines

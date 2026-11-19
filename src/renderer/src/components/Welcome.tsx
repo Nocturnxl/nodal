@@ -2,10 +2,10 @@ import { ArrowLeft, ChevronRight } from 'lucide-react';
 import { useState } from 'react';
 import { PRESETS, type Preset } from '@shared/presets';
 import type { KeyCheck, ProviderConfig } from '@shared/types';
-import { nodal } from '../lib/ipc';
 import { formatTokens } from '../lib/tree';
 import { useStore } from '../store';
 import { ProviderForm } from './ProviderForm';
+import { ImportButton } from './Security';
 import { Button, Logo } from './ui';
 
 export function PresetList({ onPick }: { onPick(p: Preset): void }) {
@@ -54,13 +54,12 @@ export function Welcome() {
             </p>
             <PresetList onPick={setPreset} />
             <div className="mt-4 flex gap-2">
-              <Button
+              <ImportButton
                 variant="ghost"
-                onClick={async () => {
+                label="Restore from an export"
+                onImported={async (r) => {
                   const s = useStore.getState();
                   try {
-                    const r = await nodal.data.importFile();
-                    if (!r) return;
                     await s.refreshProviders();
                     await s.refreshConversations();
                     s.toast({ kind: 'success', title: `Imported ${r.conversations} conversation${r.conversations === 1 ? '' : 's'}. Keys are never exported, so re-enter them in Settings.` });
@@ -73,9 +72,7 @@ export function Welcome() {
                     s.toastError('Import failed', e);
                   }
                 }}
-              >
-                Restore from an export
-              </Button>
+              />
               {providers.length > 0 && (
                 <Button variant="ghost" onClick={() => setWelcome(false)}>
                   Skip

@@ -2117,14 +2117,16 @@ TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
 SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ```
 
-### better-sqlite3 13.2.0
+### better-sqlite3-multiple-ciphers 13.2.0
 
-Licence: MIT. Source: git://github.com/WiseLibs/better-sqlite3
+Licence: MIT. Source: git://github.com/m4heshd/better-sqlite3-multiple-ciphers
 
 ```text
 The MIT License (MIT)
 
+Copyright (c) 2021-2026 Mahesh Bandara Wijerathna
 Copyright (c) 2017 Joshua Wise
+Copyright (c) 2019-2026 Ulrich Telle
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal

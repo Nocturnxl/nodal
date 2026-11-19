@@ -74,6 +74,7 @@ A provider is data plus a thin adapter. Venice, OpenRouter, OpenAI, LM Studio, O
 - Model output is untrusted: Markdown renders without raw HTML, links open in the system browser only after a native dialog shows the full URL, and only `http(s)` links are accepted.
 - Packaged builds set these fuses: `RunAsNode` off, `EnableNodeOptionsEnvironmentVariable` off, `EnableNodeCliInspectArguments` off, `OnlyLoadAppFromAsar` on, `EnableEmbeddedAsarIntegrityValidation` on.
 - Deleting a conversation deletes its attached images (unless another chat uses the same file) and overwrites the deleted rows in the database (`secure_delete`). Images attached but never sent are removed after a day.
+- **Optional encryption of chats at rest** (Settings → Security), off by default. See [Encryption](#encryption) below.
 - An unexpected error in the main process is logged, reported in a dialog with the log folder, and the app closes cleanly so in-flight replies are saved.
 - No telemetry, analytics or crash upload. The update check is off by default.
 
@@ -83,23 +84,35 @@ Everything is in the Electron user-data folder (Settings → Data → Open folde
 
 | Path | Contents |
 | --- | --- |
-| `nodal.db` | SQLite (WAL): providers, conversations, the message tree, settings, model cache, request log |
+| `nodal.db` | SQLite (WAL): providers, conversations, the message tree, settings, model cache, request log. Encrypted when encryption is on |
 | `keys.json` | `safeStorage` ciphertext, one entry per provider |
-| `attachments/<sha256>` | Attached images, deduplicated by content hash |
+| `vault.json` | Present only when encryption is on: the key-stretching settings and the sealed master key. Without it the database cannot be opened, so back it up together with `nodal.db` |
+| `attachments/<name>` | Attached images, deduplicated by content hash. The name is the SHA-256 of the image, or with encryption on an HMAC of it |
 | `logs/` | Rotating metadata-only logs, 5 files of 2 MB |
-| `backups/` | Copy of `nodal.db` taken before each schema migration |
+| `backups/` | Copy of `nodal.db` taken before each schema migration (encrypted if the database is) |
 
 Set `NODAL_USER_DATA` to run against a different folder. The tests use this.
 
 On Linux, `NODAL_PASSWORD_STORE` (`gnome-libsecret`, `kwallet`, `kwallet5` or `kwallet6`) names the keyring to use when the desktop session is one Chromium does not recognise. It cannot select plain-text storage.
 
+## Encryption
+
+Chats can be encrypted with a passphrase (Settings → Security). It is off by default; when on, NODAL opens on a lock screen and the database stays closed until the passphrase is given.
+
+- **What is covered:** the whole database (conversations, the search index, settings, provider configuration, the request log), its journal files and migration backups, and attached images. API keys are separate and always encrypted by the operating system.
+- **How:** a random 256-bit master key encrypts everything. The database uses SQLCipher's format (AES-256 with a per-page HMAC) through [SQLite3 Multiple Ciphers](https://github.com/utelle/SQLite3MultipleCiphers); each image is AES-256-GCM under a name that does not reveal its content. The passphrase is stretched with scrypt (N = 2^17, about 128 MB per guess) into a key that seals the master key in `vault.json`. Changing the passphrase re-seals the master key; it does not rewrite the data.
+- **Turning it on or off** rewrites the existing database and images in place, with no restart. If the app is closed part-way, the next unlock finishes the job. Turning it on deletes the older, unencrypted migration backups.
+- **No recovery.** A forgotten passphrase cannot be reset by anyone. Keep an export somewhere safe.
+- **Exports.** A ZIP export is plain, whether or not encryption is on. "Encrypted export" writes the same content as a `.nodalx` file protected by a passphrase of its own (scrypt and AES-256-GCM), and Import asks for that passphrase.
+- **What it does not protect against:** software running as you while NODAL is unlocked, a keylogger, or a weak passphrase. While unlocked the keys are in the main process's memory. Text that was on disk before encryption was turned on is overwritten in the database file, but the file system or an SSD may keep old blocks; full-disk encryption is still worth having. Logs are not encrypted and hold no message text. There is no auto-lock yet: NODAL locks when it is closed.
+
 ## What is implemented
 
 All P0 and P1 requirements from the specification (F1 to F16): provider management from presets or custom URLs, encrypted key entry with validation, model discovery with a 24-hour cache and hand-entered model IDs, streaming chat with Stop, persistent conversations with full-text search, Markdown with code highlighting and optional math, per-conversation system prompt and sampling controls, regenerate, edit-and-resend and branch switching, provider extension controls, a separate reasoning block, image attachments, token counts with balance and rate-limit readouts, Markdown / JSON / ZIP export and import, themes and keyboard shortcuts, and several providers in one model picker.
 
-Also added since: restore from an export on the welcome screen.
+Also added since: restore from an export on the welcome screen, and optional passphrase encryption with encrypted exports (the database half of F19).
 
-Not implemented (P2 in the specification): model-generated titles (F17; titles come from the first message), prompt library (F18), app lock and database encryption (F19), speech and image generation (F20).
+Not implemented (P2 in the specification): model-generated titles (F17; titles come from the first message), prompt library (F18), auto-lock after idle time (the rest of F19), speech and image generation (F20).
 
 ## Where this differs from the specification
 
@@ -107,7 +120,7 @@ Not implemented (P2 in the specification): model-generated titles (F17; titles c
 - **Remote images.** The specification asks for "click to load". The strict CSP and the renderer request filter make that impossible without weakening both, so a remote image is shown as a link that opens in the system browser after the usual confirmation.
 - **Continue.** No OpenAI-compatible provider advertises assistant-prefix support in a way that can be detected, so Continue always sends the partial reply back followed by an instruction to carry on, and appends the result to the same message.
 - **Context errors.** "Drop oldest turns and retry" sets a per-conversation context limit (visible in the inspector) and regenerates, so later messages in that chat are trimmed the same way.
-- **Unit tests run on plain Node.** better-sqlite3 13 ships N-API prebuilt binaries that load in both Node and Electron, so no Electron-specific rebuild is needed.
+- **Unit tests run on plain Node.** The SQLite driver (`better-sqlite3-multiple-ciphers`, a build of better-sqlite3 with encryption support) ships N-API prebuilt binaries that load in both Node and Electron, so no Electron-specific rebuild is needed.
 - **Updates.** `electron-updater` is wired in but no update feed is configured in `electron-builder.yml`, so the check does nothing until one is added.
 - **Extra columns.** `messages.error_json` stores the normalized error for a failed reply, `models_cache.manual` marks hand-entered model IDs, and `providers.model_list_query_json` holds the model-list query.
 
@@ -140,12 +153,12 @@ Still open, and not something the code can settle on its own:
 - **Signing and notarization.** Builds are unsigned. Windows needs a code-signing certificate; macOS needs an Apple Developer ID.
 - **An update feed.** `publish` is `null` in `electron-builder.yml`.
 - **Licence.** `package.json` says `UNLICENSED`.
-- **macOS and Linux.** Never built or run. The CI workflow covers both but has not executed.
+- **macOS and Linux.** Built, tested and packaged by the CI workflow on every push, but never used by hand.
 - **Real providers other than Venice**, and the app's own screens against Venice (only the adapter was tested live).
 - **A screen-reader pass.** The automated scan finds missing labels and low contrast, not whether the app is pleasant to use without sight.
-- **An independent security review.**
+- **An independent security review**, which now includes the encryption design described above.
 - **Build-time advisories.** `npm audit` reports issues in `picomatch` (no fixed version exists yet) and `minimatch` (fix needs a major downgrade of electron-builder). Both are glob libraries used only by build tools on patterns from this repository; nothing affected ships in the app. `npm audit --omit=dev` is clean.
-- **Database encryption** and languages other than English.
+- **Auto-lock** after idle time, and languages other than English.
 
 ## Open questions, and the defaults chosen
 
@@ -155,5 +168,5 @@ Still open, and not something the code can settle on its own:
 | Distribution | Personal use; builds are unsigned |
 | Updates | Manual downloads |
 | Other APIs | OpenAI-compatible only; Anthropic and Google would each need an adapter in `providers/registry.ts` |
-| Encryption at rest | OS disk encryption; the database is a plain SQLite file |
+| Encryption at rest | Off by default; optional passphrase encryption in Settings → Security |
 | Window model | One window |

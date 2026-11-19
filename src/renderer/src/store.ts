@@ -50,7 +50,7 @@ export interface ProviderStatus {
   lastUsage?: Usage;
 }
 
-export type SettingsSection = 'providers' | 'appearance' | 'data' | 'network' | 'about';
+export type SettingsSection = 'providers' | 'appearance' | 'data' | 'security' | 'network' | 'about';
 
 interface State {
   ready: boolean;

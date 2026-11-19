@@ -10,6 +10,7 @@ import type {
   ConversationListItem,
   ExtensionField,
   ExtensionValue,
+  ImportLocked,
   ImportResult,
   KeyCheck,
   KeyStatus,
@@ -19,6 +20,7 @@ import type {
   ProviderUsage,
   SamplingParams,
   Settings,
+  VaultStatus,
 } from './types';
 import type { ProviderConfigInput } from './schemas';
 
@@ -58,6 +60,11 @@ export const CH = {
   appOpenDataFolder: 'app:open-data-folder',
   appOpenLogFolder: 'app:open-log-folder',
   appOpenExternal: 'app:open-external',
+  vaultStatus: 'vault:status',
+  vaultUnlock: 'vault:unlock',
+  vaultEnable: 'vault:enable',
+  vaultChange: 'vault:change-passphrase',
+  vaultDisable: 'vault:disable',
 } as const;
 
 export interface ConversationPatch {
@@ -113,12 +120,26 @@ export interface NodalApi {
   };
   data: {
     exportConversation(id: string, format: 'markdown' | 'json'): Promise<string | null>;
-    exportAll(): Promise<string | null>;
-    importFile(): Promise<ImportResult | null>;
+    /** With a passphrase the export is written encrypted (.nodalx) instead of as a plain ZIP. */
+    exportAll(passphrase?: string): Promise<string | null>;
+    /** Opens a file picker. A protected export comes back as `locked`; call again with its token and passphrase. */
+    importFile(unlock?: { token: string; passphrase: string }): Promise<ImportResult | ImportLocked | null>;
   };
   attachments: {
     add(mime: string, data: Uint8Array): Promise<AttachmentRef>;
     get(sha256: string): Promise<{ mime: string; data: Uint8Array } | null>;
+  };
+  /**
+   * Optional passphrase encryption of chats on disk. While a profile is locked
+   * only `status` and `unlock` work; every other call fails until it is unlocked.
+   */
+  vault: {
+    status(): Promise<VaultStatus>;
+    /** False when the passphrase is wrong. */
+    unlock(passphrase: string): Promise<boolean>;
+    enable(passphrase: string): Promise<VaultStatus>;
+    changePassphrase(current: string, next: string): Promise<boolean>;
+    disable(passphrase: string): Promise<boolean>;
   };
   app: {
     info(): Promise<AppInfo>;

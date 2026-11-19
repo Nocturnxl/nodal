@@ -2,7 +2,7 @@
   "name": "nodal",
   "productName": "NODAL",
   "version": "0.1.0",
-  "generatedAt": "2026-11-18T05:31:07+00:00",
+  "generatedAt": "2026-11-19T09:34:50+00:00",
   "git": null,
   "note": "The project folder is not a git repository, so there is no commit to pin this build to.",
   "host": {
@@ -43,7 +43,7 @@
     "dist:dir": "npm run bundle && npm run notices && electron-builder --dir"
   },
   "runtimeDependencies": {
-    "better-sqlite3": {
+    "better-sqlite3-multiple-ciphers": {
       "declared": "13.2.0",
       "resolved": "13.2.0"
     },
@@ -80,10 +80,6 @@
     "@tanstack/react-virtual": {
       "declared": "3.14.26",
       "resolved": "3.14.26"
-    },
-    "@types/better-sqlite3": {
-      "declared": "^7.6.13",
-      "resolved": "7.6.13"
     },
     "@types/node": {
       "declared": "^24.0.0",
@@ -192,20 +188,20 @@
   },
   "lockfile": {
     "path": "package-lock.json",
-    "bytes": 390271,
-    "sha256": "300adde9a62f6cde01ee88399a417e8c01e81c0f7e261d5a0a3243327611254d"
+    "bytes": 389899,
+    "sha256": "c06380b4479af62b50fd4b6ddce063bf8f3845cadf051212542b58f5f6533daf"
   },
-  "lockedPackages": 708,
+  "lockedPackages": 707,
   "configs": [
     {
       "path": "package.json",
-      "bytes": 2446,
-      "sha256": "de1c601790630688a801e44c99c2b8155944bf8e32e3d484213cf808132af1ce"
+      "bytes": 2423,
+      "sha256": "54d4e4151e7e5e6bfbefac8b0ff7523ae12ede967708b17439520c9e921e8077"
     },
     {
       "path": "electron-builder.yml",
-      "bytes": 1983,
-      "sha256": "a47adcdeb519351a2bce07719fbfdaf15a7456ab4f3993f6fb5c9be4b0067333"
+      "bytes": 2000,
+      "sha256": "a73e408f8315d97a275a254e7b4e07af76ed88503e6b7fd977ee190bfedff4e2"
     },
     {
       "path": "electron.vite.config.ts",
@@ -249,70 +245,70 @@
     }
   ],
   "source": {
-    "files": 53,
-    "lines": 8062
+    "files": 56,
+    "lines": 9070
   },
   "tests": {
-    "files": 19,
-    "lines": 2784
+    "files": 21,
+    "lines": 3373
   },
   "bundle": {
     "entryFiles": [
       {
         "path": "out/main/index.js",
-        "bytes": 118622,
-        "sha256": "deea193020c2c86f0f9931693a3f144c4bda44bb5a97da7bd6dfc79dad2a6827"
+        "bytes": 135779,
+        "sha256": "ed849271bf6574e22306cac3ad4643c3c1bcbd48287943a0610dcef9df88bb51"
       },
       {
         "path": "out/preload/index.js",
-        "bytes": 3998,
-        "sha256": "80b9ee4f7f14221128d17f4a831feaced5ea7bd0bd6928c9914eee58b6709697"
+        "bytes": 4548,
+        "sha256": "f8c5e3eec8b60c08e20d7a2c56a4a4abb47d72c82604b0265c67fd0024747757"
       },
       {
-        "path": "out/renderer/assets/index-kpyRYBGa.js",
-        "bytes": 2329240,
-        "sha256": "c5f27c03df85db68ebc3bd1e23cf814a3bcd1300b04a625af214cedbd66a9d1f"
+        "path": "out/renderer/assets/index-CGDxmLCc.js",
+        "bytes": 2349278,
+        "sha256": "7098f65e02bdc956b731330139263f432a5bc2f17a85706e6d7ccd2e2a466253"
       },
       {
-        "path": "out/renderer/assets/index-zxHsCkBG.css",
-        "bytes": 68724,
-        "sha256": "0e689d3d9de17f222e5153f30368e2323be5ec167f9a8d704398a107561b5630"
+        "path": "out/renderer/assets/index-D5rRQ8Hm.css",
+        "bytes": 69172,
+        "sha256": "5d41c2a33a410251f88fdbdaf0e3b66844229b66cb7d6ad0f548b522e0327638"
       },
       {
         "path": "out/renderer/index.html",
         "bytes": 647,
-        "sha256": "1f304f59ddde8ad36e6aa845dbbee5ae038743cf74434c1b1474672a936433bf"
+        "sha256": "8c8219a0a1aa3a50c218d58bb79b93fc6edb454712ff42eac18c9629666bdbb1"
       }
     ],
     "rendererFileCount": 65,
-    "rendererTotalBytes": 3552371
+    "rendererTotalBytes": 3572857
   },
   "packaged": {
     "target": "win32 x64, NSIS (unsigned)",
     "artifacts": [
       {
         "path": "dist/NODAL Setup 0.1.0.exe",
-        "bytes": 133335573,
-        "sha256": "8d701e4fc3d6ac52e78b617808296904431d3c6796dd9fd0868199f90a9e22f5"
+        "bytes": 135190565,
+        "sha256": "d571761e86f2c7a82a8f2ff1b8d7e552c81147542b611bc89eaa13950ea75727"
       },
       {
         "path": "dist/NODAL Setup 0.1.0.exe.blockmap",
-        "bytes": 139791,
-        "sha256": "ab3876c64aff63dddd213110a0143e8a3aeac0f302484c2b95d61bf7a56adb02"
+        "bytes": 142978,
+        "sha256": "0a4ac2bade240184e9ef681824184efd9290097668b0c4f7f8c5b1d6c3fb153e"
       },
       {
         "path": "dist/win-unpacked/NODAL.exe",
         "bytes": 250157056,
-        "sha256": "92e2290dc7f59cc9ff5f63e1064c3675222d29712874cb715dcaa0577eb9bddb"
+        "sha256": "1538cfa84d68edc2c2a4373a31c44692502a84e19641e9064399fed65c6b8cf8"
       },
       {
         "path": "dist/win-unpacked/resources/app.asar",
-        "bytes": 12922287,
-        "sha256": "21e0d8def81b53f049839de8a9eeb811c609c58b7de6ee5b6d3c93f8afd087de"
+        "bytes": 12957381,
+        "sha256": "40d1a2cf16d549afc1ceb92e5f35dcc84c916a58154e7c7858731a60866486bf"
       }
     ],
     "asarUnpacked": [
-      "node_modules/better-sqlite3"
+      "node_modules/better-sqlite3-multiple-ciphers"
     ],
     "fuses": [
       "RunAsNode is Disabled",
