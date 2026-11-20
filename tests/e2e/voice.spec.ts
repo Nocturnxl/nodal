@@ -65,6 +65,40 @@ test('the voice switch is offered only where the provider has speech services', 
   await expect(page.getByRole('button', { name: /^Voice chat: talk/ })).toBeVisible();
 });
 
+test('diagnostic: what the simulated microphone delivers on this machine', async () => {
+  // Loudest level heard over nine seconds (longer than the silence the recording starts with), with and without the browser's voice processing.
+  const heard = await page.evaluate(async () => {
+    const measure = async (processing: boolean) => {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: processing, noiseSuppression: processing, autoGainControl: processing } });
+        const ctx = new AudioContext();
+        const analyser = ctx.createAnalyser();
+        analyser.fftSize = 1024;
+        ctx.createMediaStreamSource(stream).connect(analyser);
+        const buf = new Float32Array(analyser.fftSize);
+        let peak = 0;
+        const until = performance.now() + 9000;
+        while (performance.now() < until) {
+          await new Promise((r) => setTimeout(r, 50));
+          analyser.getFloatTimeDomainData(buf);
+          let sum = 0;
+          for (const v of buf) sum += v * v;
+          peak = Math.max(peak, Math.sqrt(sum / buf.length));
+        }
+        const track = stream.getAudioTracks()[0];
+        const info = { peak: Number(peak.toFixed(4)), label: track.label, muted: track.muted, state: ctx.state, settings: track.getSettings() };
+        stream.getTracks().forEach((t) => t.stop());
+        await ctx.close();
+        return info;
+      } catch (e) {
+        return { error: String(e) };
+      }
+    };
+    return { processed: await measure(true), raw: await measure(false) };
+  });
+  console.log('microphone levels:', JSON.stringify(heard));
+});
+
 test('speaking sends a message, the reply is read aloud, and it listens again', async () => {
   await page.getByRole('button', { name: /^Voice chat: talk/ }).click();
   const status = page.getByRole('status');
