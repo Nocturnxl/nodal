@@ -132,7 +132,7 @@ test('the renderer is sealed: no Node, no ipcRenderer, no key read-back, no netw
   expect(probe.process).toBe('undefined');
   expect(probe.ipcRenderer).toBe('undefined');
   expect(probe.keysApi).toEqual(['clear', 'set', 'status', 'storeStatus']); // no keys.get
-  expect(probe.topLevel).toEqual(['app', 'attachments', 'chat', 'conversations', 'data', 'keys', 'models', 'providers', 'settings', 'vault']);
+  expect(probe.topLevel).toEqual(['app', 'attachments', 'chat', 'conversations', 'data', 'keys', 'models', 'providers', 'settings', 'vault', 'voice']);
   expect(probe.fetchBlocked).toBe(true);
 
   const status = await page.evaluate(async () => window.nodal.keys.status((await window.nodal.providers.list())[0].id));

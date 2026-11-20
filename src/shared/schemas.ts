@@ -63,6 +63,7 @@ export const settingsPatchSchema = z
     inspectorOpen: z.boolean(),
     showArchived: z.boolean(),
     autoLockMinutes: z.number().int().min(0).max(1440),
+    voiceInstructions: z.string().max(4000),
   })
   .partial();
 
@@ -85,6 +86,7 @@ export const schemas = {
       conversationId: id,
       text: z.string().max(5_000_000),
       attachments: z.array(attachmentRef).max(16).optional(),
+      spoken: z.boolean().optional(),
     }),
     z.object({ mode: z.literal('edit'), conversationId: id, messageId: id, text: z.string().max(5_000_000) }),
     z.object({ mode: z.literal('regenerate'), conversationId: id, messageId: id }),
@@ -123,6 +125,12 @@ export const schemas = {
   attachmentGet: z.object({ sha256: z.string().regex(/^[a-f0-9]{64}$/) }),
   openExternal: z.object({ url: z.string().max(4000) }),
   passphrase: z.object({ passphrase }),
+  voiceTranscribe: z.object({
+    providerId: id,
+    mime: z.string().regex(/^audio\/[a-z0-9.+-]+(;\s*codecs=[a-z0-9.,-]+)?$/i).max(100),
+    data: z.instanceof(Uint8Array).refine((b) => b.byteLength > 0 && b.byteLength <= 25 * 1024 * 1024, 'Recording must be under 25 MB'),
+  }),
+  voiceSpeak: z.object({ providerId: id, text: z.string().trim().min(1).max(4096) }),
   vaultSetWipe: z.object({ enabled: z.boolean() }),
   passphraseChange: z.object({ current: passphrase, next: passphrase }),
   exportAll: z.object({ passphrase: passphrase.optional() }),

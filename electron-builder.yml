@@ -53,6 +53,12 @@ mac:
     - dmg
   category: public.app-category.productivity
   hardenedRuntime: true
+  # Voice chat: macOS shows this text when it asks for the microphone, and a
+  # signed build needs the audio-input entitlement to be allowed to ask.
+  entitlements: build/entitlements.mac.plist
+  entitlementsInherit: build/entitlements.mac.plist
+  extendInfo:
+    NSMicrophoneUsageDescription: NODAL uses the microphone for voice chat, and only while you have voice turned on.
 
 linux:
   icon: build/icon.png

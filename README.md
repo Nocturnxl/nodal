@@ -95,6 +95,18 @@ Set `NODAL_USER_DATA` to run against a different folder. The tests use this.
 
 On Linux, `NODAL_PASSWORD_STORE` (`gnome-libsecret`, `kwallet`, `kwallet5` or `kwallet6`) names the keyring to use when the desktop session is one Chromium does not recognise. It cannot select plain-text storage.
 
+## Voice chat
+
+With a Venice provider, the microphone button in the message box turns on voice chat: speak, and when you pause your words are sent as a normal message; the reply is read aloud as it arrives, then NODAL listens again. There is nothing to set up beyond allowing the microphone when the operating system asks.
+
+- **How it works.** Three ordinary requests with your Venice key: `POST /audio/transcriptions` (speech to text, model `nvidia/parakeet-tdt-0.6b-v3`), the usual chat request, and `POST /audio/speech` (text to speech, model `tts-kokoro`, voice `af_sky`) once per sentence or so. It works with every Venice text model, because the model only ever sees text.
+- **Turn-based, not live.** Venice has no realtime speech-to-speech API. Expect a short wait between finishing a sentence and hearing the answer. "Send now" ends your turn without waiting for a pause, and "Skip" stops the reading and listens again.
+- **Voice instructions** (Settings → Appearance) are added to the conversation's system prompt on spoken turns only: use them for a personality or a way of speaking. The default asks for short spoken answers without Markdown. They change the words, not the voice that reads them.
+- **What is kept.** Spoken turns are saved as text, like typed ones, so search, export and encryption treat them the same. Audio is not stored: a recording exists in memory until it has been transcribed, and logs record only sizes.
+- **Microphone access.** NODAL's window may use the microphone and nothing else: not the camera, not the screen. It is recorded only while voice chat is listening, never while a reply is being read out. The audio goes to the main process and from there to Venice, the same path chat takes, so the API key still never reaches the window.
+- **Cost.** Billed by Venice on the same balance: at the time of writing about $0.0001 per second of speech transcribed and $3.50 per million characters spoken.
+- **Not tested live.** Built from Venice's API reference (read 2026-11-20), where both audio endpoints are marked Beta, and tested against the mock provider with a simulated microphone. The voice and speech models are fixed for now.
+
 ## Encryption
 
 Chats can be encrypted with a passphrase (Settings → Security). It is off by default; when on, NODAL opens on a lock screen and the database stays closed until the passphrase is given.
@@ -112,9 +124,9 @@ Chats can be encrypted with a passphrase (Settings → Security). It is off by d
 
 All P0 and P1 requirements from the specification (F1 to F16): provider management from presets or custom URLs, encrypted key entry with validation, model discovery with a 24-hour cache and hand-entered model IDs, streaming chat with Stop, persistent conversations with full-text search, Markdown with code highlighting and optional math, per-conversation system prompt and sampling controls, regenerate, edit-and-resend and branch switching, provider extension controls, a separate reasoning block, image attachments, token counts with balance and rate-limit readouts, Markdown / JSON / ZIP export and import, themes and keyboard shortcuts, and several providers in one model picker.
 
-Also added since: restore from an export on the welcome screen, and optional passphrase encryption with encrypted exports, Lock now and auto-lock (F19), and optional deletion after five wrong passphrases.
+Also added since: restore from an export on the welcome screen, and optional passphrase encryption with encrypted exports, Lock now and auto-lock (F19), optional deletion after five wrong passphrases, a searchable Venice character list, and turn-based voice chat with Venice (part of F20).
 
-Not implemented (P2 in the specification): model-generated titles (F17; titles come from the first message), prompt library (F18), speech and image generation (F20).
+Not implemented (P2 in the specification): model-generated titles (F17; titles come from the first message), prompt library (F18), image generation and speech beyond voice chat (the rest of F20).
 
 ## Where this differs from the specification
 

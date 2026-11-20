@@ -200,7 +200,7 @@ export class StreamManager {
     // Start on the next tick so the renderer has the streamId before events arrive.
     a.finished = new Promise<void>((resolve) => {
       setImmediate(() => {
-        this.run(a, conversation, path!)
+        this.run(a, conversation, path!, req.mode === 'send' && req.spoken === true)
           .catch((e) => this.d.log.error('stream crashed', { error: String(e) }))
           .finally(() => {
             this.active.delete(streamId);
@@ -233,7 +233,7 @@ export class StreamManager {
     }
   }
 
-  private async run(a: Active, conv: Conversation, path: Message[]): Promise<void> {
+  private async run(a: Active, conv: Conversation, path: Message[], spoken = false): Promise<void> {
     const { store, log } = this.d;
     const signal = a.ctl.signal;
     let usage: Usage | null = null;
@@ -291,8 +291,10 @@ export class StreamManager {
       if (!verdict.ok) throw nodalError('blocked', verdict.reason ?? 'The provider URL is not allowed.');
       const model = store.getModel(conv.providerId, conv.modelId);
       const adapter = this.adapterFor(provider);
+      // In voice chat the voice instructions ride along with the conversation's own system prompt, for this request only.
+      const voiceInstructions = spoken ? store.getSettings().voiceInstructions.trim() : '';
       const built = buildContext(path, {
-        systemPrompt: conv.systemPrompt,
+        systemPrompt: voiceInstructions ? [conv.systemPrompt?.trim(), voiceInstructions].filter(Boolean).join('\n\n') : conv.systemPrompt,
         contextTokens: model?.contextTokens,
         maxOutputTokens: model?.maxOutputTokens,
         params: conv.params,

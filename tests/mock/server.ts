@@ -44,6 +44,8 @@ export interface MockServer {
   requests: MockRequest[];
   /** Calls per model, used by the "fail once, then succeed" models. */
   hits: Record<string, number>;
+  /** What POST /audio/transcriptions answers. Tests may change it. */
+  transcript: string;
   reset(): void;
   close(): Promise<void>;
 }
@@ -73,6 +75,36 @@ export const MOCK_CHARACTERS = [
   character('ada-lovelace', 'Ada Lovelace', 'The first programmer, curious about engines of every kind.', { tags: ['history', 'mathematics'] }),
   character('night-owl', 'Night Owl', null, { adult: true, modelId: 'mock-markdown' }),
 ];
+
+/**
+ * A 16-bit PCM WAV made of stretches of silence and a 440 Hz tone, e.g.
+ * `[[0.5, false], [1, true]]` for half a second of silence, then a second of tone.
+ */
+export function wav(parts: [seconds: number, tone: boolean][], rate = 16_000, channels = 1): Buffer {
+  const frames = parts.reduce((n, [s]) => n + Math.round(s * rate), 0);
+  const out = Buffer.alloc(44 + frames * channels * 2);
+  out.write('RIFF', 0);
+  out.writeUInt32LE(36 + frames * channels * 2, 4);
+  out.write('WAVEfmt ', 8);
+  out.writeUInt32LE(16, 16);
+  out.writeUInt16LE(1, 20);
+  out.writeUInt16LE(channels, 22);
+  out.writeUInt32LE(rate, 24);
+  out.writeUInt32LE(rate * channels * 2, 28);
+  out.writeUInt16LE(channels * 2, 32);
+  out.writeUInt16LE(16, 34);
+  out.write('data', 36);
+  out.writeUInt32LE(frames * channels * 2, 40);
+  let at = 44;
+  let i = 0;
+  for (const [seconds, tone] of parts) {
+    for (let n = Math.round(seconds * rate); n > 0; n--, i++) {
+      const v = tone ? Math.round(Math.sin((2 * Math.PI * 440 * i) / rate) * 0.5 * 32767) : 0;
+      for (let c = 0; c < channels; c++, at += 2) out.writeInt16LE(v, at);
+    }
+  }
+  return out;
+}
 
 export interface MockOptions {
   port?: number;
@@ -137,6 +169,7 @@ export async function startMockServer(opts: MockOptions = {}): Promise<MockServe
   const delay = opts.chunkDelayMs ?? 5;
   const requests: MockRequest[] = [];
   const hits: Record<string, number> = {};
+  const state = { transcript: 'What is the capital of France?' };
   let seq = 0;
 
   const json = (res: ServerResponse, status: number, body: unknown, headers: Record<string, string> = {}) => {
@@ -181,6 +214,23 @@ export async function startMockServer(opts: MockOptions = {}): Promise<MockServe
       const limit = Number(url.searchParams.get('limit') ?? 50);
       const found = MOCK_CHARACTERS.filter((c) => !q || [c.name, c.description ?? '', ...c.tags].some((t) => t.toLowerCase().includes(q)));
       return json(res, 200, { object: 'list', data: found.slice(0, limit) });
+    }
+
+    if (url.pathname.endsWith('/audio/transcriptions') && req.method === 'POST') {
+      if (!hasCreds) return json(res, 402, { x402Version: 2, error: 'Authentication required' });
+      if (!authed) return json(res, 401, { error: 'Authentication failed' });
+      if (!/^multipart\/form-data; boundary=/.test(req.headers['content-type'] ?? '') || !String(body).includes('name="file"')) return json(res, 400, { error: 'file is required' });
+      return json(res, 200, { text: state.transcript, duration: 1.2 });
+    }
+
+    if (url.pathname.endsWith('/audio/speech') && req.method === 'POST') {
+      if (!hasCreds) return json(res, 402, { x402Version: 2, error: 'Authentication required' });
+      if (!authed) return json(res, 401, { error: 'Authentication failed' });
+      if (typeof body?.input !== 'string' || !body.input) return json(res, 400, { error: 'input is required' });
+      // A real clip a browser can decode, whatever format was asked for.
+      const clip = wav([[0.15, true]]);
+      res.writeHead(200, { 'Content-Type': 'audio/wav', 'Content-Length': clip.length });
+      return void res.end(clip);
     }
 
     if (url.pathname.endsWith('/api_keys/rate_limits')) {
@@ -299,6 +349,12 @@ export async function startMockServer(opts: MockOptions = {}): Promise<MockServe
     port,
     requests,
     hits,
+    get transcript() {
+      return state.transcript;
+    },
+    set transcript(v: string) {
+      state.transcript = v;
+    },
     reset() {
       requests.length = 0;
       for (const k of Object.keys(hits)) delete hits[k];

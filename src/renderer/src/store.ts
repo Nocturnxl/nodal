@@ -21,6 +21,7 @@ import type {
 import { DEFAULT_SETTINGS } from '@shared/types';
 import { parseIpcError, nodal } from './lib/ipc';
 import { deepestLeaf, pathTo, textOf } from './lib/tree';
+import { VoiceSession, type ReplyFeed, type VoicePhase } from './lib/voice';
 
 export interface Toast {
   id: number;
@@ -60,6 +61,14 @@ interface State {
   /** Closes the chats and returns to the unlock screen. */
   lock(): void;
   settings: Settings;
+  /** Voice chat, when it is on: which conversation it belongs to and what it is doing. */
+  voice: { conversationId: string; phase: VoicePhase } | null;
+  startVoice(): Promise<void>;
+  stopVoice(): void;
+  /** Ends the spoken turn now instead of waiting for a pause. */
+  voiceSendNow(): void;
+  /** Stops reading the reply aloud and listens again. */
+  voiceSkip(): void;
   providers: ProviderConfig[];
   keyStatus: Record<string, KeyStatus>;
   models: Record<string, ModelListResult>;
@@ -88,7 +97,7 @@ interface State {
   chooseModel(providerId: string, modelId: string): Promise<void>;
   patchConversation(patch: ConversationPatch, id?: string): Promise<void>;
   removeConversation(id: string): Promise<void>;
-  send(text: string, attachments?: AttachmentRef[]): Promise<boolean>;
+  send(text: string, attachments?: AttachmentRef[], spoken?: boolean): Promise<boolean>;
   editAndResend(messageId: string, text: string): Promise<void>;
   regenerate(messageId: string): Promise<void>;
   continueReply(messageId: string): Promise<void>;
@@ -109,6 +118,7 @@ interface State {
 let toastSeq = 1;
 let initStarted = false;
 let searchTimer: ReturnType<typeof setTimeout> | undefined;
+let voiceSession: VoiceSession | null = null;
 
 export function findModel(models: Record<string, ModelListResult>, providerId: string, modelId: string): ModelInfo | undefined {
   return models[providerId]?.models.find((m) => m.id === modelId);
@@ -236,6 +246,91 @@ export const useStore = create<State>((set, get) => {
       if (get().encrypted) void nodal.vault.lock().catch((e) => get().toastError('NODAL could not lock', e));
     },
     settings: DEFAULT_SETTINGS,
+    voice: null,
+
+    async startVoice() {
+      const conversation = get().detail?.conversation;
+      if (!conversation || voiceSession) return;
+      const { id, providerId } = conversation;
+
+      /** The reply to a spoken message, followed from the same state the chat view renders. */
+      const follow = (messageId: string): ReplyFeed => ({
+        listen(cb) {
+          let last = '';
+          let done = false;
+          const emit = () => {
+            if (done) return;
+            const s = get();
+            const live = s.streams[id]?.messageId === messageId ? s.live[messageId] : undefined;
+            if (live) {
+              last = live.text;
+              return cb(last, false);
+            }
+            done = true;
+            const saved = s.detail?.conversation.id === id ? s.detail.messages.find((m) => m.id === messageId) : undefined;
+            cb(saved ? textOf(saved.content) : last, true);
+          };
+          const off = useStore.subscribe(emit);
+          emit();
+          return off;
+        },
+      });
+
+      const session = new VoiceSession({
+        onPhase: (phase) => set((s) => (s.voice ? { voice: { ...s.voice, phase } } : {})),
+        onError: (e) => {
+          voiceSession = null;
+          set({ voice: null });
+          get().toastError('Voice chat stopped', e);
+        },
+        transcribe: (mime, data) => nodal.voice.transcribe(providerId, mime, data),
+        speak: (text) => nodal.voice.speak(providerId, text),
+        async send(text) {
+          if (get().currentId !== id) return null;
+          // Speaking over a reply that is still arriving stops it, as typing Stop would.
+          if (get().streams[id]) {
+            get().stop(id);
+            await new Promise<void>((resolve) => {
+              const off = useStore.subscribe((s) => {
+                if (!s.streams[id]) {
+                  off();
+                  resolve();
+                }
+              });
+              setTimeout(() => {
+                off();
+                resolve();
+              }, 5000);
+            });
+          }
+          if (!(await get().send(text, undefined, true))) return null;
+          const ref = get().streams[id];
+          return ref ? follow(ref.messageId) : null;
+        },
+      });
+      voiceSession = session;
+      set({ voice: { conversationId: id, phase: 'starting' } });
+      try {
+        await session.start();
+      } catch (e) {
+        if (voiceSession !== session) return;
+        session.stop();
+        voiceSession = null;
+        set({ voice: null });
+        get().toastError('Voice chat could not start', e);
+      }
+    },
+    stopVoice() {
+      voiceSession?.stop();
+      voiceSession = null;
+      if (get().voice) set({ voice: null });
+    },
+    voiceSendNow() {
+      voiceSession?.sendNow();
+    },
+    voiceSkip() {
+      voiceSession?.skip();
+    },
     providers: [],
     keyStatus: {},
     models: {},
@@ -301,6 +396,8 @@ export const useStore = create<State>((set, get) => {
     },
 
     async select(id) {
+      // Voice belongs to the chat it was started in.
+      if (get().voice && get().voice?.conversationId !== id) get().stopVoice();
       if (!id) return set({ currentId: null, detail: null });
       try {
         const detail = await nodal.conversations.get(id);
@@ -381,10 +478,10 @@ export const useStore = create<State>((set, get) => {
       }
     },
 
-    async send(text, attachments) {
+    async send(text, attachments, spoken) {
       const id = get().currentId;
       if (!id) return false;
-      return startStream({ mode: 'send', conversationId: id, text, attachments: attachments?.map(({ sha256, mime }) => ({ sha256, mime })) });
+      return startStream({ mode: 'send', conversationId: id, text, attachments: attachments?.map(({ sha256, mime }) => ({ sha256, mime })), ...(spoken ? { spoken: true } : {}) });
     },
 
     async editAndResend(messageId, text) {

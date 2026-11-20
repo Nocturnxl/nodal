@@ -209,3 +209,61 @@ describe('Venice characters', () => {
     expect(mapVeniceCharacter({ slug: 'long', name: 'Long', description: 'x'.repeat(1000) })?.description).toHaveLength(240);
   });
 });
+
+describe('Venice voice services', () => {
+  let mock: MockServer;
+  beforeAll(async () => {
+    mock = await startMockServer({ publicModels: true });
+  });
+  afterAll(() => mock.close());
+
+  const runtime = (apiKey: string | undefined = MOCK_KEY) => {
+    const config = { id: 'v', ...mockProvider(mock.url, { preset: 'venice' }) };
+    return { speech: adapterFor(config).speech!, p: { config, apiKey, http, timeouts: FAST } };
+  };
+  const audio = { mime: 'audio/webm;codecs=opus', data: new Uint8Array([1, 2, 3, 4, 250, 251]) };
+
+  it('is offered by Venice and by no other provider', () => {
+    expect(adapterFor({ kind: 'openai-compatible', preset: 'venice' }).speech).toBeDefined();
+    expect(adapterFor({ kind: 'openai-compatible', preset: 'openrouter' }).speech).toBeUndefined();
+    expect(adapterFor({ kind: 'openai-compatible' }).speech).toBeUndefined();
+  });
+
+  it('uploads a recording as multipart form data and returns the words', async () => {
+    mock.reset();
+    const { speech, p } = runtime();
+    expect(await speech.transcribe(p, audio)).toBe('What is the capital of France?');
+    const req = mock.requests[0];
+    expect(req.path).toBe('/v1/audio/transcriptions');
+    expect(req.headers.authorization).toBe(`Bearer ${MOCK_KEY}`);
+    expect(req.headers['content-type']).toMatch(/^multipart\/form-data; boundary=/);
+    expect(req.body).toContain('name="model"\r\n\r\nnvidia/parakeet-tdt-0.6b-v3');
+    expect(req.body).toContain('name="file"; filename="speech.webm"\r\nContent-Type: audio/webm');
+  });
+
+  it('returns an empty string when nothing was said', async () => {
+    mock.transcript = '  ';
+    const { speech, p } = runtime();
+    expect(await speech.transcribe(p, audio)).toBe('');
+    mock.transcript = 'What is the capital of France?';
+  });
+
+  it('turns text into audio with the default model and voice', async () => {
+    mock.reset();
+    const { speech, p } = runtime();
+    const clip = await speech.speak(p, 'Paris.');
+    expect(mock.requests[0].path).toBe('/v1/audio/speech');
+    expect(mock.requests[0].body).toEqual({ model: 'tts-kokoro', voice: 'af_sky', input: 'Paris.', response_format: 'mp3' });
+    expect(clip.mime).toBe('audio/wav');
+    expect(Buffer.from(clip.data).subarray(0, 4).toString()).toBe('RIFF');
+    expect(clip.data.byteLength).toBeGreaterThan(1000);
+  });
+
+  it('reports a bad or missing key as an authentication problem for both calls', async () => {
+    const bad = runtime('wrong-key');
+    await expect(bad.speech.transcribe(bad.p, audio)).rejects.toMatchObject({ normalized: { code: 'auth', status: 401 } });
+    await expect(bad.speech.speak(bad.p, 'hello')).rejects.toMatchObject({ normalized: { code: 'auth', status: 401 } });
+    const none = runtime('');
+    await expect(none.speech.speak(none.p, 'hello')).rejects.toMatchObject({ normalized: { code: 'auth', status: 402, message: 'Venice needs a valid API key for voice.' } });
+  });
+});

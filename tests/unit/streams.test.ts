@@ -64,6 +64,30 @@ describe('a normal reply', () => {
     expect(t.store.listConversations({ search: 'said' }).map((c) => c.id)).toEqual([t.conv.id]);
   });
 
+  it('adds the voice instructions to the system prompt for a spoken message, and only for that one', async () => {
+    const t = setup('mock-echo');
+    t.store.setSettings({ voiceInstructions: 'Talk like a pirate.' });
+    const said = t.streams.start({ mode: 'send', conversationId: t.conv.id, text: 'ahoy', spoken: true });
+    await t.streams.settled(said.streamId);
+    expect(mock.requests.at(-1)!.body.messages[0]).toEqual({ role: 'system', content: 'Talk like a pirate.' });
+    // The spoken words are stored as an ordinary message.
+    expect(t.row(said.userMessage!.id).content).toEqual([{ type: 'text', text: 'ahoy' }]);
+
+    t.store.updateConversation(t.conv.id, { systemPrompt: 'Answer in French.' });
+    const again = t.streams.start({ mode: 'send', conversationId: t.conv.id, text: 'encore', spoken: true });
+    await t.streams.settled(again.streamId);
+    expect(mock.requests.at(-1)!.body.messages[0]).toEqual({ role: 'system', content: 'Answer in French.\n\nTalk like a pirate.' });
+
+    await t.send('typed');
+    expect(mock.requests.at(-1)!.body.messages[0]).toEqual({ role: 'system', content: 'Answer in French.' });
+
+    // Emptied, nothing is added.
+    t.store.setSettings({ voiceInstructions: '  ' });
+    const plain = t.streams.start({ mode: 'send', conversationId: t.conv.id, text: 'quiet', spoken: true });
+    await t.streams.settled(plain.streamId);
+    expect(mock.requests.at(-1)!.body.messages[0]).toEqual({ role: 'system', content: 'Answer in French.' });
+  });
+
   it('builds the request from the active path with the system prompt first', async () => {
     const t = setup('mock-echo');
     t.store.updateConversation(t.conv.id, { systemPrompt: 'Answer in French.', params: { temperature: 0.1 } });

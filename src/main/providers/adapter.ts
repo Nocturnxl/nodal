@@ -1,4 +1,4 @@
-import type { ChatEvent, ExtensionChoice, ExtensionField, ExtensionValue, KeyCheck, ModelInfo, ProviderConfig, SamplingParams } from '@shared/types';
+import type { ChatEvent, ExtensionChoice, ExtensionField, SpokenAudio, ExtensionValue, KeyCheck, ModelInfo, ProviderConfig, SamplingParams } from '@shared/types';
 import type { Http, Timeouts } from '../net/http';
 
 /** Everything an adapter needs for one call. The key lives here only for the call's duration. */
@@ -26,6 +26,13 @@ export interface ChatRequest {
   conversationId: string;
 }
 
+/** Speech services a provider offers beside chat. Voice chat needs both. */
+export interface SpeechServices {
+  /** A recording to the words spoken in it. Empty when nothing was said. */
+  transcribe(p: ProviderRuntime, audio: { mime: string; data: Uint8Array }): Promise<string>;
+  speak(p: ProviderRuntime, text: string): Promise<SpokenAudio>;
+}
+
 export type KeyCheckResult = Omit<KeyCheck, 'saved'>;
 
 export interface ProviderAdapter {
@@ -37,6 +44,8 @@ export interface ProviderAdapter {
   extensions(model: ModelInfo): ExtensionField[];
   /** Choices for a `lookup` control. Throws for a key the provider has no list for. */
   lookup(p: ProviderRuntime, key: string, search: string): Promise<ExtensionChoice[]>;
+  /** Present only for providers with speech-to-text and text-to-speech. */
+  speech?: SpeechServices;
 }
 
 /**
@@ -47,6 +56,7 @@ export interface ProviderExtension {
   mapModel?(raw: Record<string, unknown>, providerId: string): ModelInfo | null;
   extensions?(model: ModelInfo): ExtensionField[];
   lookup?(p: ProviderRuntime, key: string, search: string): Promise<ExtensionChoice[]>;
+  speech?: SpeechServices;
   applyToRequest?(body: Record<string, unknown>, req: ChatRequest): void;
   metaFromHeaders?(headers: Headers, now: number): Partial<Extract<ChatEvent, { t: 'meta' }>>;
   requestIdHeaders?: string[];

@@ -61,6 +61,11 @@ const api: NodalApi = {
     add: (mime, data) => invoke(CH.attachmentAdd, { mime, data }),
     get: (sha256) => invoke(CH.attachmentGet, { sha256 }),
   },
+  voice: {
+    available: (providerId) => invoke(CH.voiceAvailable, { providerId }),
+    transcribe: (providerId, mime, data) => invoke(CH.voiceTranscribe, { providerId, mime, data }),
+    speak: (providerId, text) => invoke(CH.voiceSpeak, { providerId, text }),
+  },
   vault: {
     status: () => invoke(CH.vaultStatus),
     unlock: (passphrase) => invoke(CH.vaultUnlock, { passphrase }),

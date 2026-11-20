@@ -110,6 +110,8 @@ export interface RequestOptions {
   method?: 'GET' | 'POST';
   headers?: Record<string, string>;
   json?: unknown;
+  /** A ready-made body, such as a multipart upload. Not combined with `json`. */
+  body?: { contentType: string; data: Uint8Array };
   signal?: AbortSignal;
   /** Budget until response headers. */
   timeoutMs: number;
@@ -140,13 +142,13 @@ export class Http {
     let res: Response;
     try {
       res = await this.fetchImpl(url, {
-        method: opts.method ?? (opts.json !== undefined ? 'POST' : 'GET'),
+        method: opts.method ?? (opts.json !== undefined || opts.body ? 'POST' : 'GET'),
         headers: {
           'User-Agent': this.userAgent,
-          ...(opts.json !== undefined ? { 'Content-Type': 'application/json' } : {}),
+          ...(opts.json !== undefined ? { 'Content-Type': 'application/json' } : opts.body ? { 'Content-Type': opts.body.contentType } : {}),
           ...opts.headers,
         },
-        body: opts.json !== undefined ? JSON.stringify(opts.json) : undefined,
+        body: opts.json !== undefined ? JSON.stringify(opts.json) : opts.body ? (opts.body.data as unknown as BodyInit) : undefined,
         signal: ctl.signal,
         credentials: 'omit',
         redirect: 'error',
@@ -268,4 +270,57 @@ export async function* readSse(
   } finally {
     reader.cancel().catch(() => {});
   }
+}
+
+/** Reads a whole binary body, bounded in size and time. */
+export async function readBytes(res: HttpResponse, timeoutMs: number, maxBytes = 32 * 1024 * 1024): Promise<Uint8Array> {
+  if (!res.body) return new Uint8Array();
+  const reader = res.body.getReader();
+  const chunks: Uint8Array[] = [];
+  let total = 0;
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const timeout = new Promise<never>((_, reject) => {
+    timer = setTimeout(() => reject(nodalError('timeout', 'The server stopped sending the response body.')), timeoutMs);
+  });
+  const read = async () => {
+    for (;;) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      total += value.byteLength;
+      if (total > maxBytes) throw nodalError('invalid_request', 'The response was larger than expected.');
+      chunks.push(value);
+    }
+  };
+  try {
+    await Promise.race([read(), timeout]);
+  } finally {
+    clearTimeout(timer);
+    reader.cancel().catch(() => {});
+  }
+  const out = new Uint8Array(total);
+  let at = 0;
+  for (const c of chunks) {
+    out.set(c, at);
+    at += c.byteLength;
+  }
+  return out;
+}
+
+/** Builds a multipart/form-data body from text fields and one file. */
+export function multipart(fields: Record<string, string>, file: { field: string; name: string; mime: string; data: Uint8Array }): { contentType: string; data: Uint8Array } {
+  const boundary = `----nodal${Math.random().toString(36).slice(2)}${Date.now().toString(36)}`;
+  const enc = new TextEncoder();
+  const clean = (v: string) => v.replace(/[\r\n"]/g, '');
+  const parts: Uint8Array[] = [];
+  for (const [k, v] of Object.entries(fields)) parts.push(enc.encode(`--${boundary}\r\nContent-Disposition: form-data; name="${clean(k)}"\r\n\r\n${v}\r\n`));
+  parts.push(enc.encode(`--${boundary}\r\nContent-Disposition: form-data; name="${clean(file.field)}"; filename="${clean(file.name)}"\r\nContent-Type: ${clean(file.mime)}\r\n\r\n`));
+  parts.push(file.data);
+  parts.push(enc.encode(`\r\n--${boundary}--\r\n`));
+  const data = new Uint8Array(parts.reduce((n, p) => n + p.byteLength, 0));
+  let at = 0;
+  for (const p of parts) {
+    data.set(p, at);
+    at += p.byteLength;
+  }
+  return { contentType: `multipart/form-data; boundary=${boundary}`, data };
 }

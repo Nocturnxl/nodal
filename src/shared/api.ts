@@ -10,6 +10,7 @@ import type {
   ConversationListItem,
   ExtensionChoice,
   ExtensionField,
+  SpokenAudio,
   ExtensionValue,
   ImportLocked,
   ImportResult,
@@ -63,6 +64,9 @@ export const CH = {
   appOpenDataFolder: 'app:open-data-folder',
   appOpenLogFolder: 'app:open-log-folder',
   appOpenExternal: 'app:open-external',
+  voiceAvailable: 'voice:available',
+  voiceTranscribe: 'voice:transcribe',
+  voiceSpeak: 'voice:speak',
   vaultStatus: 'vault:status',
   vaultUnlock: 'vault:unlock',
   vaultEnable: 'vault:enable',
@@ -135,6 +139,15 @@ export interface NodalApi {
   attachments: {
     add(mime: string, data: Uint8Array): Promise<AttachmentRef>;
     get(sha256: string): Promise<{ mime: string; data: Uint8Array } | null>;
+  };
+  /**
+   * Voice chat for providers that offer speech services. The window records
+   * and plays; these calls turn a recording into text and text into audio.
+   */
+  voice: {
+    available(providerId: string): Promise<boolean>;
+    transcribe(providerId: string, mime: string, data: Uint8Array): Promise<string>;
+    speak(providerId: string, text: string): Promise<SpokenAudio>;
   };
   /**
    * Optional passphrase encryption of chats on disk. While a profile is locked

@@ -1,9 +1,9 @@
-import type { ExtensionChoice, ExtensionField, KeyCheck, ModelInfo, ModelListResult, ProviderConfig } from '@shared/types';
+import type { ExtensionChoice, ExtensionField, KeyCheck, SpokenAudio, ModelInfo, ModelListResult, ProviderConfig } from '@shared/types';
 import { MODEL_CACHE_TTL_MS, Store } from './db/store';
 import { nodalError, toNormalized } from './net/errors';
 import type { Http, Timeouts } from './net/http';
 import { checkBaseUrl } from './net/http';
-import type { ProviderRuntime } from './providers/adapter';
+import type { ProviderRuntime, SpeechServices } from './providers/adapter';
 import { adapterFor } from './providers/registry';
 import type { KeyStore } from './secrets/keystore';
 
@@ -63,6 +63,23 @@ export class ModelService {
   async lookup(providerId: string, key: string, search: string): Promise<ExtensionChoice[]> {
     const config = this.provider(providerId);
     return adapterFor(config).lookup(this.runtime(config), key, search.trim());
+  }
+
+  /** The provider's speech services bound to its stored key, or null when it has none. */
+  speech(providerId: string): { transcribe(audio: { mime: string; data: Uint8Array }): Promise<string>; speak(text: string): Promise<SpokenAudio> } | null {
+    const config = this.provider(providerId);
+    const services: SpeechServices | undefined = adapterFor(config).speech;
+    if (!services) return null;
+    return {
+      transcribe: (audio) => services.transcribe(this.runtime(config), audio),
+      speak: (text) => services.speak(this.runtime(config), text),
+    };
+  }
+
+  requireSpeech(providerId: string): NonNullable<ReturnType<ModelService['speech']>> {
+    const speech = this.speech(providerId);
+    if (!speech) throw nodalError('invalid_request', 'This provider does not offer voice.');
+    return speech;
   }
 
   /** Validates `candidateKey` (or the stored key) with an authenticated call. */

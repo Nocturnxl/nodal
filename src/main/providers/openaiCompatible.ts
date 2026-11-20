@@ -170,6 +170,8 @@ export function createOpenAiCompatibleAdapter(ext: ProviderExtension = {}): Prov
       return ext.extensions?.(model) ?? [];
     },
 
+    speech: ext.speech,
+
     async lookup(p, key, search) {
       if (!ext.lookup) throw nodalError('invalid_request', 'This provider has no list for that option.');
       return ext.lookup(p, key, search);

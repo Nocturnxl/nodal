@@ -1,12 +1,22 @@
-import { ArrowUp, ImagePlus, Square, X } from 'lucide-react';
+import { ArrowUp, ImagePlus, Mic, Square, X } from 'lucide-react';
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import type { AttachmentRef, Conversation, ModelInfo } from '@shared/types';
 import { nodal } from '../lib/ipc';
 import { formatTokens } from '../lib/tree';
 import { useStore } from '../store';
-import { IconButton, cx } from './ui';
+import type { VoicePhase } from '../lib/voice';
+import { Button, IconButton, cx } from './ui';
 
 const IMAGE_TYPES = ['image/png', 'image/jpeg', 'image/webp', 'image/gif'];
+
+const VOICE_STATUS: Record<VoicePhase, string> = {
+  starting: 'Starting the microphone…',
+  listening: 'Listening. Speak when you are ready.',
+  hearing: 'Hearing you…',
+  transcribing: 'Writing down what you said…',
+  thinking: 'Waiting for the reply…',
+  speaking: 'Speaking…',
+};
 
 interface Pending extends AttachmentRef {
   preview: string;
@@ -23,6 +33,24 @@ export function Composer({ conversation, model, providerName }: { conversation: 
   const setPicker = useStore((s) => s.setPicker);
   const toastError = useStore((s) => s.toastError);
   const status = useStore((s) => s.status[conversation.providerId]);
+  const voice = useStore((s) => (s.voice?.conversationId === id ? s.voice.phase : null));
+  const startVoice = useStore((s) => s.startVoice);
+  const stopVoice = useStore((s) => s.stopVoice);
+  const voiceSendNow = useStore((s) => s.voiceSendNow);
+  const voiceSkip = useStore((s) => s.voiceSkip);
+  // The switch is only offered for providers that have speech services.
+  const [canSpeak, setCanSpeak] = useState(false);
+  useEffect(() => {
+    let alive = true;
+    setCanSpeak(false);
+    nodal.voice.available(conversation.providerId).then(
+      (ok) => alive && setCanSpeak(ok),
+      () => {},
+    );
+    return () => {
+      alive = false;
+    };
+  }, [conversation.providerId]);
   const [pending, setPending] = useState<Pending[]>([]);
   const [dragging, setDragging] = useState(false);
   const ref = useRef<HTMLTextAreaElement>(null);
@@ -139,6 +167,17 @@ export function Composer({ conversation, model, providerName }: { conversation: 
             ))}
           </div>
         )}
+        {voice && (
+          <div className="flex flex-wrap items-center gap-2 border-b border-line px-3 py-2">
+            <span className={cx('h-2 w-2 shrink-0 rounded-full', voice === 'hearing' ? 'brand-bright animate-pulse' : voice === 'listening' ? 'brand-bright' : 'bg-faint')} aria-hidden />
+            <span className="min-w-0 flex-1 text-[13px]" role="status">
+              {VOICE_STATUS[voice]}
+            </span>
+            {(voice === 'listening' || voice === 'hearing') && <Button onClick={voiceSendNow}>Send now</Button>}
+            {(voice === 'speaking' || voice === 'thinking') && <Button onClick={voiceSkip}>Skip</Button>}
+            <Button onClick={stopVoice}>Turn off voice</Button>
+          </div>
+        )}
         <textarea
           ref={ref}
           rows={1}
@@ -179,6 +218,16 @@ export function Composer({ conversation, model, providerName }: { conversation: 
                 }}
               />
             </>
+          )}
+          {canSpeak && (
+            <IconButton
+              label={voice ? 'Voice chat is on. Turn off' : 'Voice chat: talk and hear the replies'}
+              aria-pressed={!!voice}
+              className={voice ? '!bg-accent-soft !text-accent' : undefined}
+              onClick={() => (voice ? stopVoice() : void startVoice())}
+            >
+              <Mic size={16} />
+            </IconButton>
           )}
           <button
             type="button"

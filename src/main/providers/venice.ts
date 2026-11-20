@@ -1,13 +1,14 @@
 import type { ExtensionChoice, ExtensionField, ModelInfo } from '@shared/types';
 import { normalizeHttpError, NodalError, nodalError } from '../net/errors';
-import { buildAuthHeaders, joinUrl, readBody } from '../net/http';
-import type { ProviderExtension, ProviderRuntime } from './adapter';
+import { buildAuthHeaders, joinUrl, multipart, readBody, readBytes } from '../net/http';
+import type { ProviderExtension, ProviderRuntime, SpeechServices } from './adapter';
 
 // Venice = the OpenAI-compatible adapter plus this module. Facts are from the
 // Venice API reference (read 2026-11-16) and a live GET /models response.
 // GET /characters is from the reference as read on 2026-11-20, where it is
 // marked a preview API that may change; it has not been run against the live
-// service with a key.
+// service with a key. The same is true of POST /audio/transcriptions and
+// POST /audio/speech, which the reference marks Beta.
 
 function rec(v: unknown): Record<string, unknown> | undefined {
   return v && typeof v === 'object' && !Array.isArray(v) ? (v as Record<string, unknown>) : undefined;
@@ -193,9 +194,56 @@ async function listCharacters(p: ProviderRuntime, search: string): Promise<Exten
   return out;
 }
 
+// Voice chat. Defaults are the ones the reference names: the default
+// transcription model, and the least expensive speech model with its default voice.
+const STT_MODEL = 'nvidia/parakeet-tdt-0.6b-v3';
+const TTS_MODEL = 'tts-kokoro';
+const TTS_VOICE = 'af_sky';
+const AUDIO_EXT: Record<string, string> = { 'audio/webm': 'webm', 'audio/ogg': 'ogg', 'audio/wav': 'wav', 'audio/mp4': 'm4a', 'audio/mpeg': 'mp3', 'audio/flac': 'flac', 'audio/aac': 'aac' };
+
+function speechError(status: number, body: string, headers: Headers): NodalError {
+  const error = normalizeHttpError(status, body, headers, { requestIdHeaders: ['cf-ray'] });
+  if (status === 402 && /authentication required/i.test(body)) return new NodalError({ ...error, code: 'auth', message: 'Venice needs a valid API key for voice.' });
+  return new NodalError(error);
+}
+
+const veniceSpeech: SpeechServices = {
+  async transcribe(p, audio) {
+    const type = audio.mime.split(';')[0].trim().toLowerCase();
+    const res = await p.http.request(joinUrl(p.config.baseUrl, '/audio/transcriptions'), {
+      headers: { Accept: 'application/json', ...buildAuthHeaders(p.config, p.apiKey) },
+      body: multipart({ model: STT_MODEL, response_format: 'json' }, { field: 'file', name: `speech.${AUDIO_EXT[type] ?? 'webm'}`, mime: type, data: audio.data }),
+      timeoutMs: p.timeouts.firstByteMs,
+    });
+    const body = await readBody(res, 60_000);
+    if (!res.ok) throw speechError(res.status, body, res.headers);
+    let text: unknown;
+    try {
+      text = rec(JSON.parse(body))?.text;
+    } catch {
+      text = undefined;
+    }
+    if (typeof text !== 'string') throw nodalError('invalid_request', 'The transcription had an unexpected shape.', { status: res.status });
+    return text.trim();
+  },
+
+  async speak(p, text) {
+    const res = await p.http.request(joinUrl(p.config.baseUrl, '/audio/speech'), {
+      headers: { Accept: 'audio/mpeg, audio/*', ...buildAuthHeaders(p.config, p.apiKey) },
+      json: { model: TTS_MODEL, voice: TTS_VOICE, input: text, response_format: 'mp3' },
+      timeoutMs: p.timeouts.firstByteMs,
+    });
+    if (!res.ok) throw speechError(res.status, await readBody(res, 15_000), res.headers);
+    const data = await readBytes(res, 60_000);
+    if (!data.byteLength) throw nodalError('invalid_request', 'The speech service returned no audio.', { status: res.status });
+    return { mime: (res.headers.get('content-type') ?? 'audio/mpeg').split(';')[0].trim(), data };
+  },
+};
+
 export const veniceExtension: ProviderExtension = {
   mapModel: mapVeniceModel,
   extensions: veniceExtensions,
+  speech: veniceSpeech,
 
   async lookup(p, key, search) {
     if (key !== 'character_slug') throw nodalError('invalid_request', 'Venice has no list for that option.');

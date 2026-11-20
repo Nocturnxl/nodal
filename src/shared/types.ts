@@ -168,6 +168,12 @@ export interface ExtensionChoice {
   badges?: string[];
 }
 
+/** Audio made from text, ready to play. */
+export interface SpokenAudio {
+  mime: string;
+  data: Uint8Array;
+}
+
 // ----- conversations -----
 
 export type ContentPart =
@@ -236,7 +242,7 @@ export interface ConversationListItem extends Conversation {
 }
 
 export type ChatStartRequest =
-  | { mode: 'send'; conversationId: string; text: string; attachments?: { sha256: string; mime: string }[] }
+  | { mode: 'send'; conversationId: string; text: string; attachments?: { sha256: string; mime: string }[]; /** Said aloud in voice chat: the voice instructions are added to the system prompt for this reply. */ spoken?: boolean }
   | { mode: 'edit'; conversationId: string; messageId: string; text: string }
   | { mode: 'regenerate'; conversationId: string; messageId: string }
   | { mode: 'continue'; conversationId: string; messageId: string };
@@ -272,7 +278,12 @@ export interface Settings {
   showArchived: boolean;
   /** With encryption on: lock after this many minutes without input, and when the computer locks or sleeps. 0 = never. */
   autoLockMinutes: number;
+  /** Added to the system prompt for replies in voice chat: how the model should talk. Empty = nothing added. */
+  voiceInstructions: string;
 }
+
+export const DEFAULT_VOICE_INSTRUCTIONS =
+  'This is a spoken conversation: your reply will be read aloud. Answer the way a person talks, in a few short, natural sentences. Do not use Markdown, lists, tables, headings, emoji or code unless asked for them.';
 
 export const DEFAULT_SETTINGS: Settings = {
   theme: 'system',
@@ -287,6 +298,7 @@ export const DEFAULT_SETTINGS: Settings = {
   inspectorOpen: true,
   showArchived: false,
   autoLockMinutes: 15,
+  voiceInstructions: DEFAULT_VOICE_INSTRUCTIONS,
 };
 
 export interface AppInfo {

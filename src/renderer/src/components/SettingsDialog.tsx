@@ -287,6 +287,19 @@ function Appearance() {
           onBlur={(e) => e.target.value !== settings.defaultSystemPrompt && void setSettings({ defaultSystemPrompt: e.target.value })}
         />
       </div>
+      <div className="pt-4">
+        <Label hint="Voice chat only">Voice instructions</Label>
+        <textarea
+          className="field min-h-20 resize-y"
+          defaultValue={settings.voiceInstructions}
+          aria-label="Voice instructions"
+          onBlur={(e) => e.target.value !== settings.voiceInstructions && void setSettings({ voiceInstructions: e.target.value })}
+        />
+        <p className="mt-1 text-[12.5px] text-muted">
+          How the model should talk when you use voice chat, such as a personality or a way of speaking. Added to the conversation's system prompt for spoken turns only. It shapes the words; the voice that
+          reads them stays the same.
+        </p>
+      </div>
       <div className="pt-5 text-[12.5px] text-muted">
         <div className="mb-1 font-medium text-fg">Keyboard shortcuts</div>
         <div className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-0.5">

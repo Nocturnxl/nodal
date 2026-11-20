@@ -13,6 +13,7 @@ import { registerDataIpc } from './ipc/data';
 import { registerProviderIpc } from './ipc/providers';
 import type { AppContext } from './ipc/register';
 import { registerVaultIpc } from './ipc/vault';
+import { registerVoiceIpc } from './ipc/voice';
 import { createLogger } from './log';
 import { ModelService } from './models';
 import { DEFAULT_TIMEOUTS, Http, type Timeouts } from './net/http';
@@ -100,9 +101,22 @@ function lockDownRendererSession(): void {
       (DEV_ORIGIN !== undefined && (u.startsWith(`${DEV_ORIGIN}/`) || u.startsWith(`${DEV_ORIGIN.replace(/^http/, 'ws')}/`)));
     callback({ cancel: !ok });
   });
-  // Every web permission is denied except writing text to the clipboard (Copy buttons).
-  ses.setPermissionRequestHandler((_wc, permission, callback) => callback(permission === 'clipboard-sanitized-write'));
-  ses.setPermissionCheckHandler((_wc, permission) => permission === 'clipboard-sanitized-write');
+  // Every web permission is denied except writing text to the clipboard (Copy
+  // buttons) and, for voice chat, the microphone: audio only, never the camera
+  // or the screen, and only for the app's own page.
+  const ours = (url: string | undefined) => !!url && (url.startsWith(APP_ORIGIN) || (DEV_ORIGIN !== undefined && url.startsWith(DEV_ORIGIN)));
+  ses.setPermissionRequestHandler((_wc, permission, callback, details) => {
+    if (permission === 'clipboard-sanitized-write') return callback(true);
+    if (permission === 'media') {
+      const types = (details as Electron.MediaAccessPermissionRequest).mediaTypes ?? [];
+      return callback(types.length === 1 && types[0] === 'audio' && ours(details.requestingUrl));
+    }
+    callback(false);
+  });
+  ses.setPermissionCheckHandler((_wc, permission, requestingOrigin, details) => {
+    if (permission === 'clipboard-sanitized-write') return true;
+    return permission === 'media' && details.mediaType === 'audio' && ours(requestingOrigin);
+  });
 }
 
 function hardenWebContents(): void {
@@ -313,6 +327,7 @@ ${logs}`);
     registerProviderIpc(ctx);
     registerChatIpc(ctx);
     registerDataIpc(ctx);
+    registerVoiceIpc(ctx);
     applyNetworkSettings();
     autoLock.reset();
   };
