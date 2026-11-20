@@ -28,6 +28,7 @@ const api: NodalApi = {
     removeManual: (providerId, modelId) => invoke(CH.modelsRemoveManual, { providerId, modelId }),
     setOverride: (providerId, modelId, capabilities) => invoke(CH.modelsOverride, { providerId, modelId, capabilities }),
     extensions: (providerId, modelId) => invoke(CH.modelsExtensions, { providerId, modelId }),
+    lookup: (providerId, key, search) => invoke(CH.modelsLookup, { providerId, key, search }),
   },
   chat: {
     start: (req) => invoke(CH.chatStart, req),

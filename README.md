@@ -138,7 +138,9 @@ Confirmed against the live API on 2026-11-17 with `npm run smoke:venice` (a live
 - `model_spec.pricing.*.usd` is USD per million tokens.
 - With `include_venice_system_prompt` on, a one-line prompt was billed as about 1,700 prompt tokens. NODAL therefore sends it as off by default (the specification had it on); turn it on per conversation in the inspector's Model options.
 
-Not seen yet: inline `<think>` tags from a real model, the deprecation headers, and a real 429.
+- **Characters.** The Character option (inspector, Model options, Advanced) is a searchable list filled from `GET /characters` with your key, 50 at a time, searched on Venice's side; the chosen character's slug is sent as `venice_parameters.character_slug`. Venice marks this endpoint a preview that may change. It was built from the API reference (read 2026-11-20) and tested against the mock only, not the live service.
+
+Not seen yet: inline `<think>` tags from a real model, the deprecation headers, and a real 429, and a live `GET /characters` response.
 
 ## Other providers
 

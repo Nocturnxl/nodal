@@ -1,4 +1,4 @@
-import type { ChatEvent, ExtensionField, ExtensionValue, KeyCheck, ModelInfo, ProviderConfig, SamplingParams } from '@shared/types';
+import type { ChatEvent, ExtensionChoice, ExtensionField, ExtensionValue, KeyCheck, ModelInfo, ProviderConfig, SamplingParams } from '@shared/types';
 import type { Http, Timeouts } from '../net/http';
 
 /** Everything an adapter needs for one call. The key lives here only for the call's duration. */
@@ -35,6 +35,8 @@ export interface ProviderAdapter {
   streamChat(p: ProviderRuntime, req: ChatRequest, signal: AbortSignal): AsyncIterable<ChatEvent>;
   /** Provider-specific controls for the "Model options" panel. */
   extensions(model: ModelInfo): ExtensionField[];
+  /** Choices for a `lookup` control. Throws for a key the provider has no list for. */
+  lookup(p: ProviderRuntime, key: string, search: string): Promise<ExtensionChoice[]>;
 }
 
 /**
@@ -44,6 +46,7 @@ export interface ProviderAdapter {
 export interface ProviderExtension {
   mapModel?(raw: Record<string, unknown>, providerId: string): ModelInfo | null;
   extensions?(model: ModelInfo): ExtensionField[];
+  lookup?(p: ProviderRuntime, key: string, search: string): Promise<ExtensionChoice[]>;
   applyToRequest?(body: Record<string, unknown>, req: ChatRequest): void;
   metaFromHeaders?(headers: Headers, now: number): Partial<Extract<ChatEvent, { t: 'meta' }>>;
   requestIdHeaders?: string[];

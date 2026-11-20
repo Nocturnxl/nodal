@@ -90,4 +90,6 @@ export function registerProviderIpc(ctx: AppContext): void {
   });
 
   handle(ctx, CH.modelsExtensions, schemas.modelRef, ({ providerId, modelId }) => models.extensions(providerId, modelId));
+
+  handle(ctx, CH.modelsLookup, schemas.modelsLookup, ({ providerId, key, search }) => models.lookup(providerId, key, search));
 }

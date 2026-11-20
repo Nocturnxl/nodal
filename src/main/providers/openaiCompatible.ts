@@ -170,6 +170,11 @@ export function createOpenAiCompatibleAdapter(ext: ProviderExtension = {}): Prov
       return ext.extensions?.(model) ?? [];
     },
 
+    async lookup(p, key, search) {
+      if (!ext.lookup) throw nodalError('invalid_request', 'This provider has no list for that option.');
+      return ext.lookup(p, key, search);
+    },
+
     async *streamChat(p, req: ChatRequest, signal): AsyncIterable<ChatEvent> {
       const body: Record<string, unknown> = {
         model: req.modelId,

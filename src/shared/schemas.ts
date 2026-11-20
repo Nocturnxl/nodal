@@ -77,6 +77,7 @@ export const schemas = {
   modelsAddManual: z.object({ providerId: id, modelId: z.string().trim().min(1).max(500) }),
   modelsRemoveManual: z.object({ providerId: id, modelId: z.string().min(1).max(500) }),
   modelsOverride: z.object({ providerId: id, modelId: z.string().min(1).max(500), capabilities: capabilitiesSchema.nullable() }),
+  modelsLookup: z.object({ providerId: id, key: z.string().min(1).max(100), search: z.string().max(200) }),
   modelRef: z.object({ providerId: id, modelId: z.string().min(1).max(500) }),
   chatStart: z.discriminatedUnion('mode', [
     z.object({

@@ -2,7 +2,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import fixture from '../fixtures/venice-models.json';
 import type { ChatRequest } from '../../src/main/providers/adapter';
 import { adapterFor } from '../../src/main/providers/registry';
-import { mapVeniceModel, veniceExtension, veniceExtensions } from '../../src/main/providers/venice';
+import { mapVeniceCharacter, mapVeniceModel, veniceExtension, veniceExtensions } from '../../src/main/providers/venice';
 import { MOCK_KEY, startMockServer, type MockServer } from '../mock/server';
 import { FAST, http, mockProvider } from './helpers';
 
@@ -152,5 +152,60 @@ describe('Venice key validation', () => {
   it('treats the 402 payment challenge for unrecognised credentials as an auth failure', async () => {
     const res = await check(undefined);
     expect(res.error).toMatchObject({ code: 'auth', status: 402 });
+  });
+});
+
+describe('Venice characters', () => {
+  let mock: MockServer;
+  beforeAll(async () => {
+    mock = await startMockServer({ publicModels: true });
+  });
+  afterAll(() => mock.close());
+
+  const lookup = (search: string, apiKey: string | null = MOCK_KEY, key = 'character_slug') => {
+    const config = { id: 'v', ...mockProvider(mock.url, { preset: 'venice' }) };
+    return adapterFor(config).lookup({ config, apiKey: apiKey ?? undefined, http, timeouts: FAST }, key, search);
+  };
+
+  it('offers the character as a list to pick from, not a box to type a slug into', () => {
+    const field = veniceExtensions(byId('gemini-4-carbon')).find((f) => f.key === 'character_slug');
+    expect(field).toMatchObject({ type: 'lookup', label: 'Character', default: '' });
+  });
+
+  it('lists characters with the key, by name, with the slug as the value', async () => {
+    mock.reset();
+    const all = await lookup('');
+    expect(mock.requests[0].path).toBe('/v1/characters?limit=50');
+    expect(mock.requests[0].headers.authorization).toBe(`Bearer ${MOCK_KEY}`);
+    expect(all.map((c) => c.value)).toEqual(['alan-watts', 'ada-lovelace', 'night-owl']);
+    // Whitespace in a description is tidied; the model a character uses is shown.
+    expect(all[0]).toEqual({ value: 'alan-watts', label: 'Alan Watts', description: 'A philosopher who talks about Zen and the nature of the self.', badges: ['mock-echo'] });
+    expect(all[2]).toEqual({ value: 'night-owl', label: 'Night Owl', description: undefined, badges: ['18+', 'mock-markdown'] });
+  });
+
+  it('passes the search to Venice', async () => {
+    mock.reset();
+    expect((await lookup('mathematics')).map((c) => c.label)).toEqual(['Ada Lovelace']);
+    expect(mock.requests[0].path).toBe('/v1/characters?limit=50&search=mathematics');
+    expect(await lookup('nobody by this name')).toEqual([]);
+  });
+
+  it('reports a bad or missing key as an authentication problem', async () => {
+    await expect(lookup('', 'wrong-key')).rejects.toMatchObject({ normalized: { code: 'auth', status: 401 } });
+    await expect(lookup('', null)).rejects.toMatchObject({ normalized: { code: 'auth', status: 402, message: 'Venice needs a valid API key to list characters.' } });
+  });
+
+  it('has no list for other options, and other providers have none at all', async () => {
+    await expect(lookup('', MOCK_KEY, 'enable_web_search')).rejects.toMatchObject({ normalized: { code: 'invalid_request' } });
+    const config = { id: 'g', ...mockProvider(mock.url) };
+    await expect(adapterFor(config).lookup({ config, apiKey: MOCK_KEY, http, timeouts: FAST }, 'character_slug', '')).rejects.toMatchObject({ normalized: { code: 'invalid_request' } });
+  });
+
+  it('skips entries without a slug and survives missing fields', () => {
+    expect(mapVeniceCharacter({ name: 'No slug' })).toBeNull();
+    expect(mapVeniceCharacter({ slug: '  ' })).toBeNull();
+    expect(mapVeniceCharacter('nonsense')).toBeNull();
+    expect(mapVeniceCharacter({ slug: 'bare' })).toEqual({ value: 'bare', label: 'bare', description: undefined, badges: undefined });
+    expect(mapVeniceCharacter({ slug: 'long', name: 'Long', description: 'x'.repeat(1000) })?.description).toHaveLength(240);
   });
 });

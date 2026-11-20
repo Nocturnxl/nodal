@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react';
-import type { Conversation, ExtensionField, ExtensionValue, ModelInfo, SamplingParams } from '@shared/types';
-import { nodal } from '../lib/ipc';
+import { useEffect, useId, useRef, useState, type ReactNode } from 'react';
+import type { Conversation, ExtensionChoice, ExtensionField, ExtensionValue, ModelInfo, SamplingParams } from '@shared/types';
+import { nodal, parseIpcError } from '../lib/ipc';
 import { useStore } from '../store';
 import { Badge, Button, Label, Segmented, Switch } from './ui';
 
@@ -47,7 +47,118 @@ function NumberField({
   );
 }
 
-function ExtensionControl({ field, value, onChange }: { field: ExtensionField; value: ExtensionValue; onChange(v: ExtensionValue): void }) {
+// Names of choices seen so far, so a chosen value can be shown by name rather than by its identifier.
+const choiceNames = new Map<string, string>();
+const LOOKUP_PAGE = 50;
+
+/** A value picked from a list the provider serves, with search. The list is fetched when the picker is opened. */
+function LookupControl({ field, value, providerId, notes, onChange }: { field: ExtensionField; value: string; providerId: string; notes: ReactNode; onChange(v: string): void }) {
+  const [open, setOpen] = useState(false);
+  const [search, setSearch] = useState('');
+  const [attempt, setAttempt] = useState(0);
+  const [choices, setChoices] = useState<ExtensionChoice[]>([]);
+  const [status, setStatus] = useState<'loading' | 'ready' | 'error'>('loading');
+  const [error, setError] = useState('');
+  const panelId = useId();
+  const nameKey = (v: string) => `${providerId}\n${field.key}\n${v}`;
+  const noun = field.label.toLowerCase();
+
+  useEffect(() => {
+    if (!open) return;
+    let alive = true;
+    setStatus('loading');
+    // Wait for typing to pause before asking the provider.
+    const timer = setTimeout(
+      () => {
+        nodal.models.lookup(providerId, field.key, search).then(
+          (found) => {
+            if (!alive) return;
+            for (const c of found) choiceNames.set(`${providerId}\n${field.key}\n${c.value}`, c.label);
+            setChoices(found);
+            setStatus('ready');
+          },
+          (e) => {
+            if (!alive) return;
+            setChoices([]);
+            setError(parseIpcError(e).message);
+            setStatus('error');
+          },
+        );
+      },
+      search ? 300 : 0,
+    );
+    return () => {
+      alive = false;
+      clearTimeout(timer);
+    };
+  }, [open, search, attempt, providerId, field.key]);
+
+  // The control sits at the bottom of the panel: bring the list into view as it opens and fills.
+  const panel = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (open) panel.current?.scrollIntoView({ block: 'nearest' });
+  }, [open, status, choices]);
+
+  const shown = value ? (choiceNames.get(nameKey(value)) ?? value) : 'None';
+  const pick = (v: string) => {
+    onChange(v);
+    setOpen(false);
+    setSearch('');
+  };
+
+  return (
+    <div>
+      <div className="mb-1 flex flex-wrap items-center gap-1.5 text-[13px]">
+        {field.label} {notes}
+      </div>
+      <div className="flex gap-1.5">
+        <button type="button" className="field min-w-0 flex-1 truncate text-left" aria-expanded={open} aria-controls={open ? panelId : undefined} aria-label={`${field.label}: ${shown}`} onClick={() => setOpen((o) => !o)}>
+          {shown}
+        </button>
+        {value && <Button onClick={() => pick('')}>Clear</Button>}
+      </div>
+      {open && (
+        <div id={panelId} ref={panel} className="mt-1.5 rounded-md border border-line bg-bg p-1.5">
+          <input className="field text-[13px]" placeholder={`Search ${noun}s`} aria-label={`Search ${noun}s`} autoFocus value={search} onChange={(e) => setSearch(e.target.value)} />
+          <p className="px-1 pt-1.5 text-[11.5px] text-muted" aria-live="polite">
+            {status === 'loading'
+              ? 'Loading…'
+              : status === 'error'
+                ? error
+                : choices.length === 0
+                  ? search
+                    ? `No ${noun}s match.`
+                    : `No ${noun}s are available.`
+                  : choices.length >= LOOKUP_PAGE
+                    ? `Showing the first ${LOOKUP_PAGE}. Search to narrow the list.`
+                    : `${choices.length} found.`}
+          </p>
+          {status === 'error' && (
+            <Button className="mt-1.5" onClick={() => setAttempt((a) => a + 1)}>
+              Try again
+            </Button>
+          )}
+          {choices.length > 0 && (
+            <div className="mt-1 max-h-64 space-y-px overflow-y-auto">
+              {choices.map((c) => (
+                <button key={c.value} type="button" className={`block w-full rounded px-2 py-1.5 text-left ${c.value === value ? 'bg-hover' : 'hover:bg-hover/60'}`} aria-pressed={c.value === value} onClick={() => pick(c.value)}>
+                  <span className="flex flex-wrap items-center gap-1.5">
+                    <span className="text-[13px] font-medium">{c.label}</span>
+                    {c.badges?.map((b) => <Badge key={b}>{b}</Badge>)}
+                  </span>
+                  {c.description && <span className="line-clamp-2 block text-[11.5px] text-muted">{c.description}</span>}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+      {field.description && <p className="mt-0.5 text-[11.5px] text-faint">{field.description}</p>}
+    </div>
+  );
+}
+
+function ExtensionControl({ field, value, providerId, onChange }: { field: ExtensionField; value: ExtensionValue; providerId: string; onChange(v: ExtensionValue): void }) {
   const [text, setText] = useState(typeof value === 'string' ? value : String(value));
   useEffect(() => setText(typeof value === 'string' ? value : String(value)), [value]);
   const notes = (
@@ -60,6 +171,7 @@ function ExtensionControl({ field, value, onChange }: { field: ExtensionField; v
       )}
     </>
   );
+  if (field.type === 'lookup') return <LookupControl field={field} value={typeof value === 'string' ? value : ''} providerId={providerId} notes={notes} onChange={onChange} />;
   if (field.type === 'toggle') {
     return (
       <div>
@@ -203,14 +315,14 @@ export function Inspector({ conversation, model }: { conversation: Conversation;
           <section className="space-y-3">
             <div className="text-[12px] font-semibold tracking-wide text-muted uppercase">Model options</div>
             {basic.map((f) => (
-              <ExtensionControl key={f.key} field={f} value={valueOf(f)} onChange={(v) => void patch({ extensions: { ...ext, [f.key]: v } })} />
+              <ExtensionControl key={f.key} field={f} value={valueOf(f)} providerId={conversation.providerId} onChange={(v) => void patch({ extensions: { ...ext, [f.key]: v } })} />
             ))}
             {adv.length > 0 && (
               <>
                 <button type="button" className="text-[12.5px] text-accent" onClick={() => setAdvanced((a) => !a)} aria-expanded={advanced}>
                   {advanced ? 'Hide advanced' : 'Advanced'}
                 </button>
-                {advanced && adv.map((f) => <ExtensionControl key={f.key} field={f} value={valueOf(f)} onChange={(v) => void patch({ extensions: { ...ext, [f.key]: v } })} />)}
+                {advanced && adv.map((f) => <ExtensionControl key={f.key} field={f} value={valueOf(f)} providerId={conversation.providerId} onChange={(v) => void patch({ extensions: { ...ext, [f.key]: v } })} />)}
               </>
             )}
           </section>

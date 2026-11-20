@@ -1,6 +1,6 @@
 # NODAL runtime measurements
 
-Measured 2026-11-19 on one machine: Windows 11 Pro 10.0.26300 x64, AMD Ryzen 9 9950X3D 16-Core, 62 GB RAM, Electron 45.3.3. This is a fast desktop, so treat the absolute numbers as a best case.
+Measured 2026-11-20 on one machine: Windows 11 Pro 10.0.26300 x64, AMD Ryzen 9 9950X3D 16-Core, 62 GB RAM, Electron 45.3.3. This is a fast desktop, so treat the absolute numbers as a best case.
 
 Every figure here came from a run in this session. The provider in all of them is the local mock server on loopback, so nothing here measures a real provider or a real network.
 
@@ -65,63 +65,65 @@ Taking these measurements found a bug, now fixed with a regression test: content
 
 | Step | Result | Time |
 | --- | --- | ---: |
-| Unit tests (Vitest) | 136 of 136 passed | 10.4 s summed over files, about 4.6 s wall clock |
-| End-to-end tests (Playwright, built app) | 34 of 34 passed | 201.5 s |
+| Unit tests (Vitest) | 142 of 142 passed | 10.5 s summed over files, about 4.6 s wall clock |
+| End-to-end tests (Playwright, built app) | 36 of 36 passed | 204.6 s |
 | Bundle (electron-vite) | ok | 2.2 s |
 
 ### Unit test files
 
 | File | Passed | Time |
 | --- | ---: | ---: |
-| `adapter.test.ts` | 26 of 26 | 1.73 s |
+| `adapter.test.ts` | 26 of 26 | 1.79 s |
 | `autolock.test.ts` | 8 of 8 | 0.02 s |
 | `errors.test.ts` | 11 of 11 | 0.02 s |
 | `exporter.test.ts` | 8 of 8 | 1.18 s |
-| `sse.test.ts` | 4 of 4 | 0.01 s |
-| `store.test.ts` | 20 of 20 | 2.45 s |
-| `streams.test.ts` | 25 of 25 | 4.19 s |
-| `vault.test.ts` | 16 of 16 | 0.67 s |
-| `venice.test.ts` | 12 of 12 | 0.04 s |
+| `sse.test.ts` | 4 of 4 | 0.00 s |
+| `store.test.ts` | 20 of 20 | 2.43 s |
+| `streams.test.ts` | 25 of 25 | 4.24 s |
+| `vault.test.ts` | 16 of 16 | 0.65 s |
+| `venice.test.ts` | 18 of 18 | 0.07 s |
 | `wipe.test.ts` | 6 of 6 | 0.06 s |
 
 ### End-to-end tests
 
 | Test | Result | Time |
 | --- | --- | ---: |
-| welcome and provider form (light) | passed | 0.49 s |
+| welcome and provider form (light) | passed | 0.50 s |
 | welcome and provider form (dark) | passed | 0.31 s |
-| set up a provider and a conversation with rich content and an error | passed | 2.09 s |
-| chat, model picker and settings (light) | passed | 2.71 s |
-| chat, model picker and settings (dark) | passed | 2.66 s |
-| first run: a rejected key is not kept, a valid key connects and lists models | passed | 1.14 s |
-| a reply streams and is saved | passed | 0.12 s |
+| set up a provider and a conversation with rich content and an error | passed | 2.07 s |
+| chat, model picker and settings (light) | passed | 2.77 s |
+| chat, model picker and settings (dark) | passed | 2.74 s |
+| first run: a rejected key is not kept, a valid key connects and lists models | passed | 1.11 s |
+| a reply streams and is saved | passed | 0.24 s |
 | Stop cancels mid-stream within a second and keeps the partial text | passed | 0.28 s |
 | the renderer is sealed: no Node, no ipcRenderer, no key read-back, no network | passed | 0.22 s |
-| edit-and-resend creates a branch that can be switched back | passed | 0.19 s |
+| edit-and-resend creates a branch that can be switched back | passed | 0.30 s |
 | error table: mock-401 shows "Key rejected" with status and request id | passed | 0.06 s |
 | error table: mock-402 shows "Out of balance" with status and request id | passed | 0.05 s |
 | error table: mock-403 shows "Not allowed" with status and request id | passed | 0.05 s |
-| error table: mock-404-html shows "Model or endpoint not found" with status and request id | passed | 0.06 s |
+| error table: mock-404-html shows "Model or endpoint not found" with status and request id | passed | 0.05 s |
 | error table: mock-400-context shows "Conversation too long" with status and request id | passed | 0.05 s |
 | error table: mock-429-always shows "Rate limited" with status and request id | passed | 1.40 s |
-| error table: mock-500-always shows "The provider had an error" with status and request id | passed | 3.44 s |
+| error table: mock-500-always shows "The provider had an error" with status and request id | passed | 3.46 s |
 | a mid-stream failure keeps the partial reply with Continue and Regenerate | passed | 0.15 s |
 | reasoning is shown in its own collapsible block | passed | 0.27 s |
-| export writes Markdown through the native save dialog | passed | 0.02 s |
-| killing the app mid-stream leaves the reply interrupted after relaunch | passed | 3.64 s |
-| search finds conversations by message content | passed | 0.23 s |
-| the renderer made no network requests and no key string is anywhere in the user-data folder | passed | 0.65 s |
-| a failed first attempt leaves no provider behind | passed | 0.74 s |
-| attach an image, send it, and deleting the chat deletes the image file | passed | 0.89 s |
-| pressing Enter straight after attaching still sends the image | passed | 0.77 s |
-| math renders with KaTeX when switched on, and stays as text when off | passed | 0.86 s |
-| export everything to a ZIP and restore it into an empty profile from the welcome screen | passed | 1.91 s |
-| turning encryption on encrypts the existing chats and image, and the app keeps working | passed | 1.72 s |
-| a restart opens on the lock screen; nothing is reachable until the right passphrase | passed | 2.77 s |
-| an encrypted export restores into an empty profile with its passphrase | passed | 1.56 s |
-| Lock now and the idle timer close the chats without quitting | passed | 145.86 s |
-| the passphrase can be changed, and encryption turned off again | passed | 6.92 s |
-| with the option on, five wrong passphrases in a row delete everything | passed | 15.73 s |
+| export writes Markdown through the native save dialog | passed | 0.03 s |
+| killing the app mid-stream leaves the reply interrupted after relaunch | passed | 3.56 s |
+| search finds conversations by message content | passed | 0.22 s |
+| the renderer made no network requests and no key string is anywhere in the user-data folder | passed | 0.62 s |
+| a character is picked from a searchable list and sent by its slug | passed | 2.55 s |
+| when the list cannot be loaded the reason is shown, with a way to try again | passed | 0.07 s |
+| a failed first attempt leaves no provider behind | passed | 1.40 s |
+| attach an image, send it, and deleting the chat deletes the image file | passed | 0.83 s |
+| pressing Enter straight after attaching still sends the image | passed | 0.73 s |
+| math renders with KaTeX when switched on, and stays as text when off | passed | 0.78 s |
+| export everything to a ZIP and restore it into an empty profile from the welcome screen | passed | 1.83 s |
+| turning encryption on encrypts the existing chats and image, and the app keeps working | passed | 1.73 s |
+| a restart opens on the lock screen; nothing is reachable until the right passphrase | passed | 2.83 s |
+| an encrypted export restores into an empty profile with its passphrase | passed | 1.43 s |
+| Lock now and the idle timer close the chats without quitting | passed | 145.82 s |
+| the passphrase can be changed, and encryption turned off again | passed | 6.78 s |
+| with the option on, five wrong passphrases in a row delete everything | passed | 15.54 s |
 
 The two slow error-table rows are the automatic retries: three for a 429 and two for a 5xx, with backoff.
 
@@ -129,8 +131,8 @@ The two slow error-table rows are the automatic retries: three for a 429 and two
 
 - Installer: 128.9 MB
 - `app.asar`: 12.4 MB
-- Renderer JavaScript: 2.2 MB, one file
-- Main process bundle: 139 KB
+- Renderer JavaScript: 2.3 MB, one file
+- Main process bundle: 142 KB
 
 ## Not measured
 

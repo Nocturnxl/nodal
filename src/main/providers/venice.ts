@@ -1,10 +1,13 @@
-import type { ExtensionField, ModelInfo } from '@shared/types';
+import type { ExtensionChoice, ExtensionField, ModelInfo } from '@shared/types';
 import { normalizeHttpError, NodalError, nodalError } from '../net/errors';
 import { buildAuthHeaders, joinUrl, readBody } from '../net/http';
-import type { ProviderExtension } from './adapter';
+import type { ProviderExtension, ProviderRuntime } from './adapter';
 
 // Venice = the OpenAI-compatible adapter plus this module. Facts are from the
 // Venice API reference (read 2026-11-16) and a live GET /models response.
+// GET /characters is from the reference as read on 2026-11-20, where it is
+// marked a preview API that may change; it has not been run against the live
+// service with a key.
 
 function rec(v: unknown): Record<string, unknown> | undefined {
   return v && typeof v === 'object' && !Array.isArray(v) ? (v as Record<string, unknown>) : undefined;
@@ -129,18 +132,75 @@ export function veniceExtensions(model: ModelInfo): ExtensionField[] {
   }
   fields.push({
     key: 'character_slug',
-    label: 'Character slug',
-    type: 'string',
+    label: 'Character',
+    type: 'lookup',
     default: '',
-    description: 'Use a public Venice character.',
+    description: 'Chat with a public Venice character.',
     advanced: true,
   });
   return fields;
 }
 
+const CHARACTER_LIMIT = 50;
+
+/** One entry of GET /characters as a choice. The slug is what chat requests send. */
+export function mapVeniceCharacter(raw: unknown): ExtensionChoice | null {
+  const c = rec(raw);
+  if (!c || typeof c.slug !== 'string' || !c.slug.trim()) return null;
+  const text = (v: unknown, max: number) => (typeof v === 'string' && v.trim() ? v.trim().replace(/\s+/g, ' ').slice(0, max) : undefined);
+  const badges: string[] = [];
+  if (c.adult === true) badges.push('18+');
+  const model = text(c.modelId, 80);
+  if (model) badges.push(model);
+  return {
+    value: c.slug.trim(),
+    label: text(c.name, 120) ?? c.slug.trim(),
+    description: text(c.description, 240),
+    badges: badges.length ? badges : undefined,
+  };
+}
+
+async function listCharacters(p: ProviderRuntime, search: string): Promise<ExtensionChoice[]> {
+  const query = new URLSearchParams({ limit: String(CHARACTER_LIMIT) });
+  if (search) query.set('search', search.slice(0, 200));
+  const res = await p.http.request(`${joinUrl(p.config.baseUrl, '/characters')}?${query}`, {
+    headers: { Accept: 'application/json', ...buildAuthHeaders(p.config, p.apiKey) },
+    timeoutMs: p.timeouts.connectMs,
+  });
+  const body = await readBody(res, 30_000);
+  if (!res.ok) {
+    const error = normalizeHttpError(res.status, body, res.headers, { requestIdHeaders: ['cf-ray'] });
+    // Without credentials Venice answers 402 with a payment challenge.
+    if (res.status === 402) throw new NodalError({ ...error, code: 'auth', message: 'Venice needs a valid API key to list characters.' });
+    throw new NodalError(error);
+  }
+  let data: unknown;
+  try {
+    data = rec(JSON.parse(body))?.data;
+  } catch {
+    data = undefined;
+  }
+  if (!Array.isArray(data)) throw nodalError('invalid_request', 'The character list had an unexpected shape.', { status: res.status });
+  const seen = new Set<string>();
+  const out: ExtensionChoice[] = [];
+  for (const entry of data) {
+    const choice = mapVeniceCharacter(entry);
+    if (choice && !seen.has(choice.value)) {
+      seen.add(choice.value);
+      out.push(choice);
+    }
+  }
+  return out;
+}
+
 export const veniceExtension: ProviderExtension = {
   mapModel: mapVeniceModel,
   extensions: veniceExtensions,
+
+  async lookup(p, key, search) {
+    if (key !== 'character_slug') throw nodalError('invalid_request', 'Venice has no list for that option.');
+    return listCharacters(p, search);
+  },
   requestIdHeaders: ['cf-ray'],
 
   applyToRequest(body, req) {
@@ -151,7 +211,7 @@ export const veniceExtension: ProviderExtension = {
     for (const f of fields) {
       const v = value(f.key);
       if (f.showWhen && value(f.showWhen.key) === f.showWhen.notEquals) continue;
-      if (f.type === 'string') {
+      if (f.type === 'string' || f.type === 'lookup') {
         if (typeof v === 'string' && v.trim()) params[f.key] = v.trim();
       } else if (v !== undefined) {
         params[f.key] = v;

@@ -8,6 +8,7 @@ import type {
   Conversation,
   ConversationDetail,
   ConversationListItem,
+  ExtensionChoice,
   ExtensionField,
   ExtensionValue,
   ImportLocked,
@@ -42,6 +43,7 @@ export const CH = {
   modelsRemoveManual: 'models:remove-manual',
   modelsOverride: 'models:override',
   modelsExtensions: 'models:extensions',
+  modelsLookup: 'models:lookup',
   chatStart: 'chat:start',
   chatCancel: 'chat:cancel',
   chatEvent: 'chat:event',
@@ -104,6 +106,8 @@ export interface NodalApi {
     removeManual(providerId: string, modelId: string): Promise<ModelListResult>;
     setOverride(providerId: string, modelId: string, capabilities: Capabilities | null): Promise<ModelListResult>;
     extensions(providerId: string, modelId: string): Promise<ExtensionField[]>;
+    /** Choices for a `lookup` control, fetched from the provider and narrowed by `search`. */
+    lookup(providerId: string, key: string, search: string): Promise<ExtensionChoice[]>;
   };
   chat: {
     start(req: ChatStartRequest): Promise<ChatStartResult>;

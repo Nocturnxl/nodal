@@ -144,7 +144,8 @@ export type ExtensionValue = string | number | boolean;
 export interface ExtensionField {
   key: string;
   label: string;
-  type: 'toggle' | 'enum' | 'number' | 'string';
+  /** `lookup` is a string chosen from a list the provider serves; the choices come from `models.lookup`. */
+  type: 'toggle' | 'enum' | 'number' | 'string' | 'lookup';
   options?: { value: string; label: string }[];
   default: ExtensionValue;
   description?: string;
@@ -155,6 +156,16 @@ export interface ExtensionField {
   showWhen?: { key: string; notEquals: ExtensionValue };
   /** The provider did not confirm the capability this control depends on. */
   unverified?: boolean;
+}
+
+/** One choice for a `lookup` control. */
+export interface ExtensionChoice {
+  /** What is stored and sent to the provider. */
+  value: string;
+  label: string;
+  description?: string;
+  /** Short facts shown beside the label, such as the model a character uses. */
+  badges?: string[];
 }
 
 // ----- conversations -----

@@ -48,6 +48,32 @@ export interface MockServer {
   close(): Promise<void>;
 }
 
+const character = (slug: string, name: string, description: string | null, extra: Record<string, unknown> = {}) => ({
+  id: `id-${slug}`,
+  slug,
+  name,
+  description,
+  adult: false,
+  author: 'anon',
+  featured: false,
+  tags: [] as string[],
+  webEnabled: false,
+  modelId: 'mock-echo',
+  shareUrl: `https://venice.ai/c/${slug}`,
+  photoUrl: null,
+  createdAt: '2024-12-20T21:28:08.934Z',
+  updatedAt: '2024-12-20T21:28:08.934Z',
+  stats: { averageRating: 4.7, imports: 112, ratingCount: 24, ratingSum: 113, userRating: null },
+  ...extra,
+});
+
+/** Shaped like Venice's GET /characters, per its API reference. */
+export const MOCK_CHARACTERS = [
+  character('alan-watts', 'Alan Watts', 'A philosopher who   talks about Zen\nand the nature of the self.', { tags: ['philosophy'], featured: true }),
+  character('ada-lovelace', 'Ada Lovelace', 'The first programmer, curious about engines of every kind.', { tags: ['history', 'mathematics'] }),
+  character('night-owl', 'Night Owl', null, { adult: true, modelId: 'mock-markdown' }),
+];
+
 export interface MockOptions {
   port?: number;
   /** Require `Authorization: Bearer MOCK_KEY` (default true). */
@@ -146,6 +172,15 @@ export async function startMockServer(opts: MockOptions = {}): Promise<MockServe
       // OpenRouter-style key check.
       if (!authed) return json(res, 401, { error: { message: 'User not found.', code: 401 } });
       return json(res, 200, { data: { label: 'mock', limit: null, usage: 0, is_free_tier: false } });
+    }
+
+    if (url.pathname.endsWith('/characters') && req.method === 'GET') {
+      if (!hasCreds) return json(res, 402, { x402Version: 2, error: 'Authentication required' });
+      if (!authed) return json(res, 401, { error: 'Authentication failed' });
+      const q = (url.searchParams.get('search') ?? '').toLowerCase();
+      const limit = Number(url.searchParams.get('limit') ?? 50);
+      const found = MOCK_CHARACTERS.filter((c) => !q || [c.name, c.description ?? '', ...c.tags].some((t) => t.toLowerCase().includes(q)));
+      return json(res, 200, { object: 'list', data: found.slice(0, limit) });
     }
 
     if (url.pathname.endsWith('/api_keys/rate_limits')) {

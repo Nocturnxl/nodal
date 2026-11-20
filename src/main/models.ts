@@ -1,4 +1,4 @@
-import type { ExtensionField, KeyCheck, ModelInfo, ModelListResult, ProviderConfig } from '@shared/types';
+import type { ExtensionChoice, ExtensionField, KeyCheck, ModelInfo, ModelListResult, ProviderConfig } from '@shared/types';
 import { MODEL_CACHE_TTL_MS, Store } from './db/store';
 import { nodalError, toNormalized } from './net/errors';
 import type { Http, Timeouts } from './net/http';
@@ -57,6 +57,12 @@ export class ModelService {
     const config = this.provider(providerId);
     const model = this.store.getModel(providerId, modelId) ?? { id: modelId, providerId, displayName: modelId, capabilities: {} };
     return adapterFor(config).extensions(model);
+  }
+
+  /** Choices for a `lookup` control, asked of the provider each time (the renderer waits for typing to pause). */
+  async lookup(providerId: string, key: string, search: string): Promise<ExtensionChoice[]> {
+    const config = this.provider(providerId);
+    return adapterFor(config).lookup(this.runtime(config), key, search.trim());
   }
 
   /** Validates `candidateKey` (or the stored key) with an authenticated call. */
