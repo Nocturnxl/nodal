@@ -77,8 +77,22 @@ export const MOCK_CHARACTERS = [
 ];
 
 /**
- * A 16-bit PCM WAV made of stretches of silence and a 440 Hz tone, e.g.
- * `[[0.5, false], [1, true]]` for half a second of silence, then a second of tone.
+ * A rough stand-in for a voice: a pitch that wanders, with overtones, chopped
+ * into syllables. A steady tone will not do, because the noise suppression a
+ * microphone stream goes through treats anything constant as background noise
+ * and removes it (seen on macOS).
+ */
+function voiced(t: number): number {
+  const syllable = t % 0.25 < 0.18 ? Math.sin((Math.PI * (t % 0.25)) / 0.18) : 0;
+  const pitch = 150 + 40 * Math.sin(2 * Math.PI * 1.3 * t) + 25 * Math.sin(2 * Math.PI * 3.1 * t);
+  let sum = 0;
+  for (let k = 1; k <= 8; k++) sum += Math.sin(2 * Math.PI * pitch * k * t) / k;
+  return 0.3 * syllable * sum;
+}
+
+/**
+ * A 16-bit PCM WAV made of stretches of silence and of voice-like sound, e.g.
+ * `[[0.5, false], [1, true]]` for half a second of silence, then a second of sound.
  */
 export function wav(parts: [seconds: number, tone: boolean][], rate = 16_000, channels = 1): Buffer {
   const frames = parts.reduce((n, [s]) => n + Math.round(s * rate), 0);
@@ -99,7 +113,7 @@ export function wav(parts: [seconds: number, tone: boolean][], rate = 16_000, ch
   let i = 0;
   for (const [seconds, tone] of parts) {
     for (let n = Math.round(seconds * rate); n > 0; n--, i++) {
-      const v = tone ? Math.round(Math.sin((2 * Math.PI * 440 * i) / rate) * 0.5 * 32767) : 0;
+      const v = tone ? Math.round(voiced(i / rate) * 32767) : 0;
       for (let c = 0; c < channels; c++, at += 2) out.writeInt16LE(v, at);
     }
   }
