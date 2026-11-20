@@ -23,6 +23,15 @@ let page: Page;
 let userData: string;
 
 async function scan(name: string): Promise<void> {
+  // Dialogs fade in. Measured part-way through, text is blended with what is behind it and fails contrast by accident.
+  await page.evaluate(() =>
+    Promise.all(
+      document
+        .getAnimations()
+        .filter((anim) => Number.isFinite(anim.effect?.getComputedTiming().endTime))
+        .map((anim) => anim.finished.catch(() => undefined)),
+    ),
+  );
   const results = await new AxeBuilder({ page }).setLegacyMode(true).withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa']).analyze();
   const summary = results.violations.map((v) => `${v.id} (${v.impact}): ${v.help}\n    ${v.nodes.slice(0, 4).map((n) => n.target.join(' ')).join('\n    ')}`);
   expect(summary, `${name}:\n${summary.join('\n')}`).toEqual([]);
