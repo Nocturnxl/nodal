@@ -12,6 +12,7 @@ const IMAGE_TYPES = ['image/png', 'image/jpeg', 'image/webp', 'image/gif'];
 const VOICE_STATUS: Record<VoicePhase, string> = {
   starting: 'Starting the microphone…',
   listening: 'Listening. Speak when you are ready.',
+  silent: "No sound is coming from the microphone. Check that it is not muted, and that NODAL may use it in your system's privacy settings.",
   hearing: 'Hearing you…',
   transcribing: 'Writing down what you said…',
   thinking: 'Waiting for the reply…',
@@ -173,7 +174,7 @@ export function Composer({ conversation, model, providerName }: { conversation: 
             <span className="min-w-0 flex-1 text-[13px]" role="status">
               {VOICE_STATUS[voice]}
             </span>
-            {(voice === 'listening' || voice === 'hearing') && <Button onClick={voiceSendNow}>Send now</Button>}
+            {(voice === 'listening' || voice === 'hearing' || voice === 'silent') && <Button onClick={voiceSendNow}>Send now</Button>}
             {(voice === 'speaking' || voice === 'thinking') && <Button onClick={voiceSkip}>Skip</Button>}
             <Button onClick={stopVoice}>Turn off voice</Button>
           </div>

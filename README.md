@@ -104,8 +104,9 @@ With a Venice provider, the microphone button in the message box turns on voice 
 - **Voice instructions** (Settings → Appearance) are added to the conversation's system prompt on spoken turns only: use them for a personality or a way of speaking. The default asks for short spoken answers without Markdown. They change the words, not the voice that reads them.
 - **What is kept.** Spoken turns are saved as text, like typed ones, so search, export and encryption treat them the same. Audio is not stored: a recording exists in memory until it has been transcribed, and logs record only sizes.
 - **Microphone access.** NODAL's window may use the microphone and nothing else: not the camera, not the screen. It is recorded only while voice chat is listening, never while a reply is being read out. The audio goes to the main process and from there to Venice, the same path chat takes, so the API key still never reaches the window.
+- **A silent microphone.** If the microphone delivers nothing at all for a few seconds (muted, or blocked in the operating system's privacy settings), the status line says so instead of listening for ever.
 - **Cost.** Billed by Venice on the same balance: at the time of writing about $0.0001 per second of speech transcribed and $3.50 per million characters spoken.
-- **Not tested live.** Built from Venice's API reference (read 2026-11-20), where both audio endpoints are marked Beta, and tested against the mock provider with a simulated microphone. The voice and speech models are fixed for now.
+- **Not tested live.** Built from Venice's API reference (read 2026-11-20), where both audio endpoints are marked Beta, and tested against the mock provider with a simulated microphone. On the macOS CI machine that simulated microphone delivers only silence (the system has not granted microphone access there), so the spoken round trip is exercised on Windows and Linux, and macOS exercises the silent-microphone notice instead. The voice and speech models are fixed for now.
 
 ## Encryption
 

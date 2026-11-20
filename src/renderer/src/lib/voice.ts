@@ -6,7 +6,8 @@ import type { SpokenAudio } from '@shared/types';
 // arrives, then listen again. The microphone is only recorded while listening,
 // so the app never hears its own voice.
 
-export type VoicePhase = 'starting' | 'listening' | 'hearing' | 'transcribing' | 'thinking' | 'speaking';
+/** `silent` is listening to a microphone that delivers nothing at all: muted, or blocked by the operating system. */
+export type VoicePhase = 'starting' | 'listening' | 'silent' | 'hearing' | 'transcribing' | 'thinking' | 'speaking';
 
 /** A reply as it streams. `listen` calls back with the whole text so far, and once more with `done` when it is complete. */
 export interface ReplyFeed {
@@ -33,6 +34,8 @@ const IDLE_RESTART_MS = 20_000;
 /** A single turn is cut off here, well inside the provider's upload limit. */
 const MAX_TURN_MS = 120_000;
 const MIN_LEVEL = 0.015;
+/** A working microphone always carries some noise. Exact silence for this long means it is muted or blocked. */
+const DEAD_MS = 4000;
 
 function micError(e: unknown): Error {
   const name = e instanceof DOMException ? e.name : '';
@@ -53,6 +56,8 @@ export class VoiceSession {
   private unlisten: (() => void) | null = null;
   private phase: VoicePhase = 'starting';
   private stopped = false;
+  /** Whether the microphone has delivered any signal at all this session. */
+  private alive = false;
   /** Goes up whenever the session moves on, so work started earlier can tell it is out of date. */
   private turn = 0;
 
@@ -79,7 +84,7 @@ export class VoiceSession {
 
   /** Ends the turn now instead of waiting for a pause. */
   sendNow(): void {
-    if (this.phase === 'listening' || this.phase === 'hearing') void this.finish();
+    if (this.phase === 'listening' || this.phase === 'hearing' || this.phase === 'silent') void this.finish();
   }
 
   /** Stops reading the reply aloud and listens again. */
@@ -166,6 +171,12 @@ export class VoiceSession {
       let sum = 0;
       for (const v of samples) sum += v * v;
       const level = Math.sqrt(sum / samples.length);
+      if (level > 0) {
+        this.alive = true;
+        if (this.phase === 'silent') this.setPhase('listening');
+      } else if (!this.alive && now - startedAt > DEAD_MS && this.phase === 'listening') {
+        this.setPhase('silent');
+      }
       if (level > Math.max(MIN_LEVEL, floor * 3)) {
         spoken += dt;
         quiet = 0;

@@ -2,7 +2,7 @@
   "name": "nodal",
   "productName": "NODAL",
   "version": "0.1.0",
-  "generatedAt": "2026-11-20T09:06:00+00:00",
+  "generatedAt": "2026-11-20T09:56:01+00:00",
   "git": null,
   "note": "The project folder is not a git repository, so there is no commit to pin this build to.",
   "host": {
@@ -240,17 +240,17 @@
     },
     {
       "path": ".github/workflows/ci.yml",
-      "bytes": 2740,
-      "sha256": "42d60bdf6a5e08a3965b27cf8ad794f56e449ddf636843bef08d9e5bbae86079"
+      "bytes": 2994,
+      "sha256": "74813a8721b951a5f6c77014b8fb57162348152736061ed805e9ed6b9040510d"
     }
   ],
   "source": {
     "files": 61,
-    "lines": 10388
+    "lines": 10400
   },
   "tests": {
     "files": 26,
-    "lines": 4290
+    "lines": 4334
   },
   "bundle": {
     "entryFiles": [
@@ -270,18 +270,18 @@
         "sha256": "426ac7191181228e4c8409f207ddd6df19c285e092bd9a17fddc19180473c3b0"
       },
       {
-        "path": "out/renderer/assets/index-mmCJmvBb.js",
-        "bytes": 2376930,
-        "sha256": "d35e2df26d8dcad3ecc8d32bf2a9bed317df6b204ecc7ed845e9954cc3bd27e0"
+        "path": "out/renderer/assets/index-Ddch0lJU.js",
+        "bytes": 2377560,
+        "sha256": "22055b236ee60082e717a4294ba85f2d8515b7003367cfefefb13f519c984100"
       },
       {
         "path": "out/renderer/index.html",
         "bytes": 647,
-        "sha256": "142b27047b15e496fa50ef07ab4e9f4ce2e4f3f9c0467c3973586275e9529169"
+        "sha256": "e6db32abc44f24d03f5b63e9bf65daef95448243d57d3ab79767539844ce052a"
       }
     ],
     "rendererFileCount": 65,
-    "rendererTotalBytes": 3600940
+    "rendererTotalBytes": 3601570
   },
   "packaged": {
     "target": "win32 x64, NSIS (unsigned)",

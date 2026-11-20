@@ -23,6 +23,8 @@ let mock: MockServer;
 let dir: string;
 let app: ElectronApplication;
 let page: Page;
+/** False where the stand-in microphone delivers only silence: seen on macOS runners, where the system has not granted microphone access. */
+let micWorks = true;
 
 const audioRequests = () => mock.requests.filter((r) => r.path.includes('/audio/'));
 const composer = () => page.getByRole('textbox', { name: 'Message', exact: true });
@@ -50,6 +52,24 @@ test.beforeAll(async () => {
     { url: mock.url, key: MOCK_KEY },
   );
   await page.reload();
+  // Listen to the stand-in microphone for up to six seconds (the sound starts 1.5 s in).
+  micWorks = await page.evaluate(async () => {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    const ctx = new AudioContext();
+    const analyser = ctx.createAnalyser();
+    ctx.createMediaStreamSource(stream).connect(analyser);
+    const buf = new Float32Array(analyser.fftSize);
+    let heard = false;
+    for (const until = performance.now() + 6000; !heard && performance.now() < until; ) {
+      await new Promise((r) => setTimeout(r, 50));
+      analyser.getFloatTimeDomainData(buf);
+      heard = buf.some((v) => Math.abs(v) > 0.01);
+    }
+    stream.getTracks().forEach((t) => t.stop());
+    await ctx.close();
+    return heard;
+  });
+  console.log(`simulated microphone delivers sound: ${micWorks}`);
 });
 test.afterAll(async () => {
   await app.close().catch(() => {});
@@ -65,58 +85,14 @@ test('the voice switch is offered only where the provider has speech services', 
   await expect(page.getByRole('button', { name: /^Voice chat: talk/ })).toBeVisible();
 });
 
-test('diagnostic: what the simulated microphone delivers on this machine', async () => {
-  // Loudest level heard over nine seconds (longer than the silence the recording starts with), with and without the browser's voice processing.
-  const heard = await page.evaluate(async () => {
-    const measure = async (processing: boolean) => {
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: processing, noiseSuppression: processing, autoGainControl: processing } });
-        const ctx = new AudioContext();
-        const analyser = ctx.createAnalyser();
-        analyser.fftSize = 1024;
-        ctx.createMediaStreamSource(stream).connect(analyser);
-        const buf = new Float32Array(analyser.fftSize);
-        let peak = 0;
-        const until = performance.now() + 9000;
-        while (performance.now() < until) {
-          await new Promise((r) => setTimeout(r, 50));
-          analyser.getFloatTimeDomainData(buf);
-          let sum = 0;
-          for (const v of buf) sum += v * v;
-          peak = Math.max(peak, Math.sqrt(sum / buf.length));
-        }
-        const track = stream.getAudioTracks()[0];
-        const info = { peak: Number(peak.toFixed(4)), label: track.label, muted: track.muted, state: ctx.state, settings: track.getSettings() };
-        stream.getTracks().forEach((t) => t.stop());
-        await ctx.close();
-        return info;
-      } catch (e) {
-        return { error: String(e) };
-      }
-    };
-    return { processed: await measure(true), raw: await measure(false) };
-  });
-  console.log('microphone levels:', JSON.stringify(heard));
-});
-
 test('speaking sends a message, the reply is read aloud, and it listens again', async () => {
+  test.skip(!micWorks, 'the simulated microphone delivers only silence on this machine');
   await page.getByRole('button', { name: /^Voice chat: talk/ }).click();
   const status = page.getByRole('status');
   await expect(status).toHaveText(/Listening|Hearing you/);
   await expect(page.getByRole('button', { name: 'Voice chat is on. Turn off' })).toHaveAttribute('aria-pressed', 'true');
   const axe = await new AxeBuilder({ page }).setLegacyMode(true).withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa']).analyze();
   expect(axe.violations.map((v) => `${v.id}: ${v.help}`)).toEqual([]);
-
-  // Recorded in the run's output: what audio hardware this machine gives the app.
-  console.log(
-    'audio devices:',
-    await page.evaluate(async () => {
-      const probe = new AudioContext();
-      const state = probe.state;
-      await probe.close();
-      return JSON.stringify({ context: state, devices: (await navigator.mediaDevices.enumerateDevices()).map((d) => d.kind) });
-    }),
-  );
 
   // The pause after the sound ends the turn: the words arrive as an ordinary message and the model answers.
   await expect(page.locator('[data-role="user"]').last()).toContainText('What is the capital of France?', { timeout: 30_000 });
@@ -145,7 +121,16 @@ test('speaking sends a message, the reply is read aloud, and it listens again', 
   expect(saved).toEqual([[{ type: 'text', text: 'What is the capital of France?' }], [{ type: 'text', text: 'You said: What is the capital of France?' }]]);
 });
 
+test('a microphone that delivers nothing is pointed out instead of listening for ever', async () => {
+  test.skip(micWorks, 'needs a machine whose simulated microphone is silent');
+  await page.getByRole('button', { name: /^Voice chat: talk/ }).click();
+  await expect(page.getByRole('status')).toHaveText(/^No sound is coming from the microphone\./, { timeout: 15_000 });
+  const axe = await new AxeBuilder({ page }).setLegacyMode(true).withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa']).analyze();
+  expect(axe.violations.map((v) => `${v.id}: ${v.help}`)).toEqual([]);
+});
+
 test('turning voice off releases the microphone, and typing still works', async () => {
+  await expect(page.getByRole('button', { name: 'Turn off voice' })).toBeVisible();
   await page.getByRole('button', { name: 'Turn off voice' }).click();
   await expect(page.getByRole('status')).toHaveCount(0);
   await expect(page.getByRole('button', { name: /^Voice chat: talk/ })).toHaveAttribute('aria-pressed', 'false');
@@ -163,7 +148,7 @@ test('a voice service failure turns voice off and says why', async () => {
   const providerId = await page.evaluate(async () => (await window.nodal.providers.list()).find((p) => p.preset === 'venice')!.id);
   await page.evaluate((id) => window.nodal.keys.clear(id), providerId);
   await page.getByRole('button', { name: /^Voice chat: talk/ }).click();
-  await expect(page.getByRole('status')).toHaveText(/Listening|Hearing you/);
+  await expect(page.getByRole('status')).toHaveText(/Listening|Hearing you|No sound/);
   await page.getByRole('button', { name: 'Send now' }).click();
   await expect(page.getByText('Voice chat stopped')).toBeVisible({ timeout: 15_000 });
   await expect(page.getByText('Venice needs a valid API key for voice.')).toBeVisible();

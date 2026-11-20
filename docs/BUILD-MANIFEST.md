@@ -1,6 +1,6 @@
 # NODAL build manifest
 
-Version 0.1.0, generated 2026-11-20T09:06:00+00:00. Machine-readable copy: `build-manifest.json`.
+Version 0.1.0, generated 2026-11-20T09:56:01+00:00. Machine-readable copy: `build-manifest.json`.
 
 The project folder is not a git repository, so this build is pinned by the lockfile hash and the artifact hashes below, not by a commit.
 
@@ -55,8 +55,8 @@ Everything else (31 direct dev dependencies, 707 packages in the lockfile) is bu
 | `out/main/index.js` | 149 KB | `9506558f1583c1f6186380434bad507bbb62b1df6d8048983573c09cd09373ae` |
 | `out/preload/index.js` | 5 KB | `336b2b5f32c27c35ef256058976612c3f8134bb84785c7b5fc10965f07db1be1` |
 | `out/renderer/assets/index-B1IKsxX6.css` | 68 KB | `426ac7191181228e4c8409f207ddd6df19c285e092bd9a17fddc19180473c3b0` |
-| `out/renderer/assets/index-mmCJmvBb.js` | 2.3 MB | `d35e2df26d8dcad3ecc8d32bf2a9bed317df6b204ecc7ed845e9954cc3bd27e0` |
-| `out/renderer/index.html` | 1 KB | `142b27047b15e496fa50ef07ab4e9f4ce2e4f3f9c0467c3973586275e9529169` |
+| `out/renderer/assets/index-Ddch0lJU.js` | 2.3 MB | `22055b236ee60082e717a4294ba85f2d8515b7003367cfefefb13f519c984100` |
+| `out/renderer/index.html` | 1 KB | `e6db32abc44f24d03f5b63e9bf65daef95448243d57d3ab79767539844ce052a` |
 | `package-lock.json` | 381 KB | `c06380b4479af62b50fd4b6ddce063bf8f3845cadf051212542b58f5f6533daf` |
 
 The renderer bundle is 65 files, 3.4 MB in total. Most of the file count is KaTeX fonts.
@@ -77,5 +77,5 @@ The installer is unsigned and has no update feed. It will show a SmartScreen war
 
 ## Size of the code
 
-- Source: 61 files, 10388 lines
-- Tests: 26 files, 4290 lines
+- Source: 61 files, 10400 lines
+- Tests: 26 files, 4334 lines
