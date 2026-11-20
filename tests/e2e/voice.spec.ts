@@ -73,6 +73,17 @@ test('speaking sends a message, the reply is read aloud, and it listens again', 
   const axe = await new AxeBuilder({ page }).setLegacyMode(true).withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa']).analyze();
   expect(axe.violations.map((v) => `${v.id}: ${v.help}`)).toEqual([]);
 
+  // Recorded in the run's output: what audio hardware this machine gives the app.
+  console.log(
+    'audio devices:',
+    await page.evaluate(async () => {
+      const probe = new AudioContext();
+      const state = probe.state;
+      await probe.close();
+      return JSON.stringify({ context: state, devices: (await navigator.mediaDevices.enumerateDevices()).map((d) => d.kind) });
+    }),
+  );
+
   // The pause after the sound ends the turn: the words arrive as an ordinary message and the model answers.
   await expect(page.locator('[data-role="user"]').last()).toContainText('What is the capital of France?', { timeout: 30_000 });
   await expect(page.locator('[data-role="assistant"]').last()).toContainText('You said: What is the capital of France?');
