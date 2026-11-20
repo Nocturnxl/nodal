@@ -54,6 +54,11 @@ export type SettingsSection = 'providers' | 'appearance' | 'data' | 'security' |
 
 interface State {
   ready: boolean;
+  /** Chats on this computer are encrypted, so the window can be locked. */
+  encrypted: boolean;
+  setEncrypted(v: boolean): void;
+  /** Closes the chats and returns to the unlock screen. */
+  lock(): void;
   settings: Settings;
   providers: ProviderConfig[];
   keyStatus: Record<string, KeyStatus>;
@@ -225,6 +230,11 @@ export const useStore = create<State>((set, get) => {
 
   return {
     ready: false,
+    encrypted: false,
+    setEncrypted: (encrypted) => set({ encrypted }),
+    lock: () => {
+      if (get().encrypted) void nodal.vault.lock().catch((e) => get().toastError('NODAL could not lock', e));
+    },
     settings: DEFAULT_SETTINGS,
     providers: [],
     keyStatus: {},

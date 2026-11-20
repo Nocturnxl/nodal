@@ -84,7 +84,7 @@ test.afterAll(async () => {
 
 test('turning encryption on encrypts the existing chats and image, and the app keeps working', async () => {
   const { app, page } = await launch(dir);
-  expect(await page.evaluate(() => window.nodal.vault.status())).toEqual({ enabled: false, unlocked: true });
+  expect(await page.evaluate(() => window.nodal.vault.status())).toMatchObject({ enabled: false, unlocked: true });
   await page.getByRole('button', { name: /^Custom/ }).click();
   await page.getByLabel('Name', { exact: true }).fill('Mock provider');
   await page.getByLabel('Base URL', { exact: true }).fill(mock.url);
@@ -103,6 +103,7 @@ test('turning encryption on encrypts the existing chats and image, and the app k
   expect(diskContains(dir, SECRET)).toBe(true);
   expect(images(dir).every(isPng)).toBe(true);
 
+  await expect(page.getByRole('button', { name: /^Lock now/ })).toHaveCount(0); // nothing to lock yet
   await openSecurity(page);
   const turnOn = page.getByRole('button', { name: 'Turn on encryption' });
   await expect(turnOn).toBeDisabled();
@@ -144,7 +145,7 @@ test('turning encryption on encrypts the existing chats and image, and the app k
 test('a restart opens on the lock screen; nothing is reachable until the right passphrase', async () => {
   const { app, page } = await launch(dir);
   await expect(page.getByRole('heading', { name: 'NODAL is locked' })).toBeVisible();
-  expect(await page.evaluate(() => window.nodal.vault.status())).toEqual({ enabled: true, unlocked: false });
+  expect(await page.evaluate(() => window.nodal.vault.status())).toMatchObject({ enabled: true, unlocked: false });
 
   const results = await new AxeBuilder({ page }).setLegacyMode(true).withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa']).analyze();
   expect(results.violations.map((v) => `${v.id}: ${v.help}`)).toEqual([]);
@@ -221,6 +222,70 @@ test('an encrypted export restores into an empty profile with its passphrase', a
   await app.close();
 });
 
+test('Lock now and the idle timer close the chats without quitting', async () => {
+  test.setTimeout(300_000);
+  const { app, page } = await launch(dir);
+  const locked = page.getByRole('heading', { name: 'NODAL is locked' });
+  const unlock = async () => {
+    await page.getByLabel('Passphrase', { exact: true }).fill(PASS);
+    await page.getByRole('button', { name: 'Unlock' }).click();
+    await expect(page.locator('[data-conversation-id]')).toHaveCount(1);
+  };
+  await unlock();
+
+  // Lock now, from the sidebar.
+  await page.getByRole('button', { name: /^Lock now/ }).click();
+  await expect(locked).toBeVisible();
+  expect(await page.evaluate(() => window.nodal.vault.status())).toMatchObject({ enabled: true, unlocked: false });
+  await expect(page.getByText(SECRET)).toHaveCount(0);
+  const failed = await page.evaluate(() => window.nodal.conversations.list().then(() => false, () => true));
+  expect(failed).toBe(true);
+  await page.getByLabel('Passphrase', { exact: true }).fill('not the passphrase');
+  await page.getByRole('button', { name: 'Unlock' }).click();
+  await expect(page.getByRole('alert')).toContainText('not right');
+
+  // Unlocking again brings everything back, and new messages work.
+  await unlock();
+  await expect(page.locator('[data-role="user"]').first()).toContainText(SECRET);
+  await expect(page.locator('[data-role="user"]').getByAltText('Attached image').first()).toBeVisible();
+  await composer(page).fill('after locking and unlocking');
+  await composer(page).press('Enter');
+  await expect(page.locator('[data-role="assistant"]').last()).toContainText('You said: after locking and unlocking');
+  await expect(page.locator('[data-role="assistant"]').last()).toHaveAttribute('data-finish', 'stop');
+  expect(diskContains(dir, 'after locking and unlocking')).toBe(false);
+
+  // The keyboard shortcut, and Lock now in Settings.
+  await page.keyboard.press('Control+Shift+L');
+  await expect(locked).toBeVisible();
+  await unlock();
+  await openSecurity(page);
+  const axe = await new AxeBuilder({ page }).setLegacyMode(true).withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa']).analyze();
+  expect(axe.violations.map((v) => `${v.id}: ${v.help}`)).toEqual([]);
+  await expect(page.getByLabel('Lock automatically')).toHaveValue('15');
+  await page.getByRole('region', { name: 'Lock' }).getByRole('button', { name: 'Lock now' }).click();
+  await expect(locked).toBeVisible();
+  await unlock();
+
+  // On the shortest setting, using the window keeps it open well past a minute...
+  await openSecurity(page);
+  await page.getByLabel('Lock automatically').selectOption('1');
+  await page.keyboard.press('Escape');
+  for (let i = 0; i < 16; i++) {
+    await page.waitForTimeout(5000);
+    if (i % 2) await page.mouse.move(300 + i, 300);
+    else await page.keyboard.press('Shift');
+  }
+  await expect(locked).toHaveCount(0);
+  // ...and left alone, it locks itself.
+  await expect(locked).toBeVisible({ timeout: 100_000 });
+  expect(await page.evaluate(() => window.nodal.vault.status())).toMatchObject({ enabled: true, unlocked: false });
+
+  // Back to never, so the tests that follow are not timed.
+  await unlock();
+  expect((await page.evaluate(() => window.nodal.settings.set({ autoLockMinutes: 0 }))).autoLockMinutes).toBe(0);
+  await app.close();
+});
+
 test('the passphrase can be changed, and encryption turned off again', async () => {
   let { app, page } = await launch(dir);
   await page.getByLabel('Passphrase', { exact: true }).fill(PASS);
@@ -264,5 +329,83 @@ test('the passphrase can be changed, and encryption turned off again', async () 
   ({ app, page } = await launch(dir));
   await expect(page.locator('[data-conversation-id]')).toHaveCount(1);
   await expect(page.locator('[data-role="user"]').first()).toContainText(SECRET);
+  await app.close();
+});
+
+test('with the option on, five wrong passphrases in a row delete everything', async () => {
+  let { app, page } = await launch(dir);
+  await expect(page.locator('[data-conversation-id]')).toHaveCount(1);
+  await openSecurity(page);
+  await page.getByLabel('Passphrase', { exact: true }).fill(PASS);
+  await page.getByLabel('Type it again').fill(PASS);
+  await page.getByRole('checkbox').check();
+  await page.getByRole('button', { name: 'Turn on encryption' }).click();
+  await expect(page.getByRole('heading', { name: 'Change passphrase' })).toBeVisible();
+
+  // Off until asked for.
+  const option = page.getByLabel('Delete all chats after 5 wrong passphrases in a row');
+  await expect(option).not.toBeChecked();
+  expect(await page.evaluate(() => window.nodal.vault.status())).toEqual({ enabled: true, unlocked: true, wipeAfter: 0, failures: 0 });
+  await option.click(); // the box follows the saved setting, so it ticks once main has answered
+  await expect(option).toBeChecked();
+  expect(await page.evaluate(() => window.nodal.vault.status())).toEqual({ enabled: true, unlocked: true, wipeAfter: 5, failures: 0 });
+  const axe = await new AxeBuilder({ page }).setLegacyMode(true).withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa']).analyze();
+  expect(axe.violations.map((v) => `${v.id}: ${v.help}`)).toEqual([]);
+  await app.close();
+
+  const guess = async (text: string) => {
+    await page.getByLabel('Passphrase', { exact: true }).fill(text);
+    await page.getByRole('button', { name: 'Unlock' }).click();
+  };
+
+  // The lock screen says what is at stake, and counts down.
+  ({ app, page } = await launch(dir));
+  await expect(page.getByText('5 more wrong passphrases delete all chats on this computer.')).toBeVisible();
+  await guess('first wrong guess');
+  await expect(page.getByText('4 more wrong passphrases delete all chats on this computer.')).toBeVisible();
+  await guess('second wrong guess');
+  await expect(page.getByText('3 more wrong passphrases delete all chats on this computer.')).toBeVisible();
+  await app.close();
+
+  // Restarting does not start the count again; the right passphrase does.
+  ({ app, page } = await launch(dir));
+  await expect(page.getByText('3 more wrong passphrases delete all chats on this computer.')).toBeVisible();
+  await guess(PASS);
+  await expect(page.locator('[data-conversation-id]')).toHaveCount(1);
+  expect(await page.evaluate(() => window.nodal.vault.status())).toEqual({ enabled: true, unlocked: true, wipeAfter: 5, failures: 0 });
+  expect(existsSync(join(dir, 'keys.json'))).toBe(true);
+
+  // Lock, then five wrong ones.
+  await page.getByRole('button', { name: /^Lock now/ }).click();
+  await expect(page.getByText('5 more wrong passphrases delete all chats on this computer.')).toBeVisible();
+  for (let i = 1; i <= 4; i++) {
+    await guess(`wrong guess number ${i}`);
+    await expect(page.getByText(i === 4 ? 'One more wrong passphrase deletes all chats on this computer.' : `${5 - i} more wrong passphrases delete all chats on this computer.`)).toBeVisible({
+      timeout: 15_000,
+    });
+  }
+  expect(existsSync(join(dir, 'vault.json'))).toBe(true);
+  await guess('wrong guess number 5');
+  await expect(page.getByRole('heading', { name: 'The chats on this computer were deleted' })).toBeVisible({ timeout: 15_000 });
+  const gone = await new AxeBuilder({ page }).setLegacyMode(true).withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa']).analyze();
+  expect(gone.violations.map((v) => `${v.id}: ${v.help}`)).toEqual([]);
+
+  // Nothing is left: no sealed key, no images, no stored API key, and a new empty database.
+  expect(existsSync(join(dir, 'vault.json'))).toBe(false);
+  expect(existsSync(join(dir, 'attachments'))).toBe(false);
+  expect(existsSync(join(dir, 'keys.json'))).toBe(false);
+  expect(header(dir)).toBe('SQLite format 3');
+  expect(diskContains(dir, SECRET)).toBe(false);
+  expect(await page.evaluate(() => window.nodal.vault.status())).toEqual({ enabled: false, unlocked: true, wipeAfter: 0, failures: 0 });
+
+  // Even the right passphrase opens nothing now. NODAL starts as new.
+  await page.getByRole('button', { name: 'Start again' }).click();
+  await expect(page.getByRole('heading', { name: 'Welcome to NODAL' })).toBeVisible();
+  expect(await page.evaluate(() => window.nodal.conversations.list())).toEqual([]);
+  expect(await page.evaluate(() => window.nodal.providers.list())).toEqual([]);
+  await app.close();
+
+  ({ app, page } = await launch(dir));
+  await expect(page.getByRole('heading', { name: 'Welcome to NODAL' })).toBeVisible();
   await app.close();
 });

@@ -62,6 +62,7 @@ export const settingsPatchSchema = z
     lastModel: z.object({ providerId: id, modelId: z.string().min(1).max(500) }).nullable(),
     inspectorOpen: z.boolean(),
     showArchived: z.boolean(),
+    autoLockMinutes: z.number().int().min(0).max(1440),
   })
   .partial();
 
@@ -121,6 +122,7 @@ export const schemas = {
   attachmentGet: z.object({ sha256: z.string().regex(/^[a-f0-9]{64}$/) }),
   openExternal: z.object({ url: z.string().max(4000) }),
   passphrase: z.object({ passphrase }),
+  vaultSetWipe: z.object({ enabled: z.boolean() }),
   passphraseChange: z.object({ current: passphrase, next: passphrase }),
   exportAll: z.object({ passphrase: passphrase.optional() }),
   importFile: z.object({ unlock: z.object({ token: id, passphrase }).optional() }),

@@ -1,4 +1,4 @@
-import { app, BrowserWindow, dialog, Menu, nativeTheme, protocol, safeStorage, session } from 'electron';
+import { app, BrowserWindow, dialog, ipcMain, Menu, nativeTheme, powerMonitor, protocol, safeStorage, session } from 'electron';
 import { existsSync } from 'node:fs';
 import { readFile } from 'node:fs/promises';
 import { extname, join, normalize, sep } from 'node:path';
@@ -16,6 +16,7 @@ import { registerVaultIpc } from './ipc/vault';
 import { createLogger } from './log';
 import { ModelService } from './models';
 import { DEFAULT_TIMEOUTS, Http, type Timeouts } from './net/http';
+import { AutoLock, type LockReason } from './secrets/autolock';
 import { KeyStore } from './secrets/keystore';
 import { Vault, type VaultKeys } from './secrets/vault';
 import { maybeCheckForUpdates } from './updater';
@@ -60,6 +61,8 @@ if (process.platform === 'linux' && store && ['gnome-libsecret', 'kwallet', 'kwa
 
 let mainWindow: BrowserWindow | null = null;
 let streams: StreamManager | null = null;
+/** Called on every keyboard or mouse event in the window; feeds the auto-lock idle clock. */
+let onInput: () => void = () => {};
 
 function serveApp(): void {
   const root = normalize(join(__dirname, '../renderer'));
@@ -158,6 +161,7 @@ function createWindow(): void {
     },
   });
   mainWindow.once('ready-to-show', () => mainWindow?.show());
+  mainWindow.webContents.on('input-event', () => onInput());
   mainWindow.on('closed', () => {
     mainWindow = null;
   });
@@ -171,6 +175,7 @@ function start(): void {
   const trustedOrigins = DEV_ORIGIN ? [APP_ORIGIN, DEV_ORIGIN] : [APP_ORIGIN];
   const vault = new Vault(userData);
   let ctx: AppContext | null = null;
+  let liveKeys: VaultKeys | null = null;
 
   // An unexpected error in the main process: record it, tell the user where
   // the log is, and close cleanly so in-flight replies are saved as interrupted.
@@ -239,6 +244,7 @@ ${logs}`);
     if (interrupted) log.info('marked interrupted replies', { count: interrupted });
 
     const keys = new KeyStore(join(userData, 'keys.json'), safeStorage);
+    liveKeys = vaultKeys;
     const attachments = new AttachmentStore(join(userData, 'attachments'), vaultKeys);
     // Picks up any image a previous, interrupted switch left in the other form.
     if (vaultKeys) attachments.convert(vaultKeys);
@@ -308,9 +314,57 @@ ${logs}`);
     registerChatIpc(ctx);
     registerDataIpc(ctx);
     applyNetworkSettings();
+    autoLock.reset();
   };
 
-  registerVaultIpc({ vault, userData, log, trustedOrigins, ctx: () => ctx, boot });
+  /**
+   * Returns an unlocked profile to the state it starts in: nothing left in
+   * this process can read a chat until the passphrase is given again.
+   */
+  const lock = async (reason: LockReason): Promise<void> => {
+    const current = ctx;
+    if (!current) return;
+    // Replies in flight are saved as interrupted, exactly as when the app closes.
+    current.streams.abortAll();
+    await Promise.race([current.streams.settled(), new Promise((r) => setTimeout(r, 3000))]);
+    for (const channel of Object.values(CH)) if (!channel.startsWith('vault:')) ipcMain.removeHandler(channel);
+    ctx = null;
+    streams = null;
+    try {
+      current.store.db.close();
+    } catch {
+      /* already closed */
+    }
+    liveKeys?.files.fill(0);
+    liveKeys?.names.fill(0);
+    liveKeys = null;
+    vault.lock();
+    log.info('locked', { reason });
+    // A reload drops everything the window had on screen and in memory, and it comes back on the unlock screen.
+    setImmediate(() => {
+      if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.reload();
+    });
+  };
+
+  const vaultControl = registerVaultIpc({ vault, userData, log, trustedOrigins, ctx: () => ctx, boot, lock });
+
+  const autoLock = new AutoLock({
+    minutes: () => {
+      if (!ctx || !vault.enabled) return 0;
+      try {
+        return ctx.store.getSettings().autoLockMinutes;
+      } catch {
+        return 0;
+      }
+    },
+    busy: () => (streams?.activeCount ?? 0) > 0 || vaultControl.busy(),
+    lock: (reason) => void vaultControl.lock(reason).catch((e) => log.error('locking failed', { error: e instanceof Error ? e.message : String(e) })),
+  });
+  onInput = () => autoLock.touch();
+  setInterval(() => autoLock.check(), 5000).unref();
+  // Not sent on Linux, where only the idle timer applies.
+  powerMonitor.on('lock-screen', () => autoLock.request('screen'));
+  powerMonitor.on('suspend', () => autoLock.request('sleep'));
   // With encryption on, the window opens on the unlock screen and the database stays closed until then.
   if (!vault.enabled) {
     try {

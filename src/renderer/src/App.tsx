@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import type { VaultStatus } from '@shared/types';
 import { ChatView } from './components/ChatView';
 import { ModelPicker } from './components/ModelPicker';
@@ -30,6 +30,11 @@ function useShortcuts() {
       if (!s.ready) return; // still locked or starting
       const mod = e.ctrlKey || e.metaKey;
       const key = e.key.toLowerCase();
+      if (mod && e.shiftKey && !e.altKey && key === 'l') {
+        e.preventDefault();
+        s.lock();
+        return;
+      }
       if (mod && !e.shiftKey && !e.altKey) {
         if (key === 'n') {
           e.preventDefault();
@@ -69,15 +74,23 @@ export function App() {
 
   // Encrypted chats stay closed until the passphrase is given, so nothing else is asked of main before then.
   const [vault, setVault] = useState<VaultStatus | null>(null);
+  const refresh = useCallback(
+    () =>
+      nodal.vault.status().then((v) => {
+        setVault(v);
+        useStore.getState().setEncrypted(v.enabled);
+      }),
+    [],
+  );
   useEffect(() => {
-    void nodal.vault.status().then(setVault);
-  }, []);
+    void refresh();
+  }, [refresh]);
   const unlocked = vault?.unlocked ?? false;
   useEffect(() => {
     if (unlocked) void init().catch((e) => useStore.getState().toastError('NODAL could not start', e));
   }, [init, unlocked]);
 
-  if (vault && !vault.unlocked) return <Unlock onUnlocked={() => setVault({ enabled: true, unlocked: true })} />;
+  if (vault && !vault.unlocked) return <Unlock status={vault} onUnlocked={() => void refresh()} />;
   if (!ready) return <div className="h-full bg-bg" />;
   return (
     <>

@@ -66,6 +66,8 @@ const api: NodalApi = {
     enable: (passphrase) => invoke(CH.vaultEnable, { passphrase }),
     changePassphrase: (current, next) => invoke(CH.vaultChange, { current, next }),
     disable: (passphrase) => invoke(CH.vaultDisable, { passphrase }),
+    lock: () => invoke(CH.vaultLock),
+    setWipe: (enabled) => invoke(CH.vaultSetWipe, { enabled }),
   },
   app: {
     info: () => invoke(CH.appInfo),

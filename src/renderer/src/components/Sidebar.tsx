@@ -1,4 +1,4 @@
-import { Archive, ArchiveRestore, Pencil, Pin, PinOff, Plus, Search, Settings as SettingsIcon, Trash2 } from 'lucide-react';
+import { Archive, ArchiveRestore, Lock, Pencil, Pin, PinOff, Plus, Search, Settings as SettingsIcon, Trash2 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import type { ConversationListItem } from '@shared/types';
 import { relativeTime } from '../lib/tree';
@@ -97,6 +97,8 @@ export function Sidebar() {
   const setSearch = useStore((s) => s.setSearch);
   const newChat = useStore((s) => s.newChat);
   const openSettings = useStore((s) => s.openSettings);
+  const encrypted = useStore((s) => s.encrypted);
+  const lock = useStore((s) => s.lock);
 
   return (
     <aside className="flex w-[264px] shrink-0 flex-col border-r border-line bg-panel" aria-label="Conversations">
@@ -110,6 +112,11 @@ export function Sidebar() {
         <IconButton label="Settings (Ctrl+,)" onClick={() => openSettings('providers')} className="h-8 w-8">
           <SettingsIcon size={15} />
         </IconButton>
+        {encrypted && (
+          <IconButton label="Lock now (Ctrl+Shift+L)" onClick={lock} className="h-8 w-8">
+            <Lock size={15} />
+          </IconButton>
+        )}
       </div>
       <div className="relative px-2.5 pb-2">
         <Search size={13} className="pointer-events-none absolute top-2 left-5 text-faint" />

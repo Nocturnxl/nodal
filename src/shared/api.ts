@@ -20,6 +20,7 @@ import type {
   ProviderUsage,
   SamplingParams,
   Settings,
+  UnlockResult,
   VaultStatus,
 } from './types';
 import type { ProviderConfigInput } from './schemas';
@@ -65,6 +66,8 @@ export const CH = {
   vaultEnable: 'vault:enable',
   vaultChange: 'vault:change-passphrase',
   vaultDisable: 'vault:disable',
+  vaultLock: 'vault:lock',
+  vaultSetWipe: 'vault:set-wipe',
 } as const;
 
 export interface ConversationPatch {
@@ -135,11 +138,14 @@ export interface NodalApi {
    */
   vault: {
     status(): Promise<VaultStatus>;
-    /** False when the passphrase is wrong. */
-    unlock(passphrase: string): Promise<boolean>;
+    unlock(passphrase: string): Promise<UnlockResult>;
     enable(passphrase: string): Promise<VaultStatus>;
     changePassphrase(current: string, next: string): Promise<boolean>;
     disable(passphrase: string): Promise<boolean>;
+    /** Closes the chats and returns to the unlock screen. Replies still arriving are stopped. The window reloads. */
+    lock(): Promise<void>;
+    /** Turns on or off deleting all chats after five wrong passphrases in a row. */
+    setWipe(enabled: boolean): Promise<VaultStatus>;
   };
   app: {
     info(): Promise<AppInfo>;

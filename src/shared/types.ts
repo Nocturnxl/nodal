@@ -259,6 +259,8 @@ export interface Settings {
   lastModel: { providerId: string; modelId: string } | null;
   inspectorOpen: boolean;
   showArchived: boolean;
+  /** With encryption on: lock after this many minutes without input, and when the computer locks or sleeps. 0 = never. */
+  autoLockMinutes: number;
 }
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -273,6 +275,7 @@ export const DEFAULT_SETTINGS: Settings = {
   lastModel: null,
   inspectorOpen: true,
   showArchived: false,
+  autoLockMinutes: 15,
 };
 
 export interface AppInfo {
@@ -305,6 +308,18 @@ export interface VaultStatus {
   enabled: boolean;
   /** The passphrase has been given this session (always true when encryption is off). */
   unlocked: boolean;
+  /** Delete all chats after this many wrong passphrases in a row. 0 = never. */
+  wipeAfter: number;
+  /** Wrong passphrases since the last right one. */
+  failures: number;
+}
+
+export interface UnlockResult {
+  ok: boolean;
+  /** That was one wrong passphrase too many: the chats were deleted and NODAL has started empty. */
+  wiped: boolean;
+  /** Wrong passphrases left before the chats are deleted, or null when that option is off. */
+  remaining: number | null;
 }
 
 export interface ProviderUsage {

@@ -1,6 +1,6 @@
 # NODAL build manifest
 
-Version 0.1.0, generated 2026-11-19T09:34:50+00:00. Machine-readable copy: `build-manifest.json`.
+Version 0.1.0, generated 2026-11-19T20:13:15+00:00. Machine-readable copy: `build-manifest.json`.
 
 The project folder is not a git repository, so this build is pinned by the lockfile hash and the artifact hashes below, not by a commit.
 
@@ -48,15 +48,15 @@ Everything else (31 direct dev dependencies, 707 packages in the lockfile) is bu
 
 | File | Size | SHA-256 |
 | --- | ---: | --- |
-| `dist/NODAL Setup 0.1.0.exe` | 128.9 MB | `d571761e86f2c7a82a8f2ff1b8d7e552c81147542b611bc89eaa13950ea75727` |
-| `dist/NODAL Setup 0.1.0.exe.blockmap` | 140 KB | `0a4ac2bade240184e9ef681824184efd9290097668b0c4f7f8c5b1d6c3fb153e` |
-| `dist/win-unpacked/NODAL.exe` | 238.6 MB | `1538cfa84d68edc2c2a4373a31c44692502a84e19641e9064399fed65c6b8cf8` |
-| `dist/win-unpacked/resources/app.asar` | 12.4 MB | `40d1a2cf16d549afc1ceb92e5f35dcc84c916a58154e7c7858731a60866486bf` |
-| `out/main/index.js` | 133 KB | `ed849271bf6574e22306cac3ad4643c3c1bcbd48287943a0610dcef9df88bb51` |
-| `out/preload/index.js` | 4 KB | `f8c5e3eec8b60c08e20d7a2c56a4a4abb47d72c82604b0265c67fd0024747757` |
-| `out/renderer/assets/index-CGDxmLCc.js` | 2.2 MB | `7098f65e02bdc956b731330139263f432a5bc2f17a85706e6d7ccd2e2a466253` |
+| `dist/NODAL Setup 0.1.0.exe` | 128.9 MB | `7f48cc4e6b9c9dc842e8856af2bddd9a509a0c854e90695706b330ab25331435` |
+| `dist/NODAL Setup 0.1.0.exe.blockmap` | 140 KB | `0f94e853795a193264e452b9087d44f223e700be77a6a167415ae1b4931bd9aa` |
+| `dist/win-unpacked/NODAL.exe` | 238.6 MB | `97b2a7a7f0fbb282b9d2bf3c98032b35d3a938cdc1069b194ddd603e8861d953` |
+| `dist/win-unpacked/resources/app.asar` | 12.4 MB | `7d85ee546850e19963af223911cbc2b6a207b7e1ab044d689f9d520f6158848e` |
+| `out/main/index.js` | 139 KB | `1470ab0989ae5ec65215bd68342ec649f3cf4027b5289e4c773e4dad6f66cb9a` |
+| `out/preload/index.js` | 5 KB | `0963bc2f1efd169eb18e6e77a491b4699f0e05d37921c4dc2b7253739187e73c` |
 | `out/renderer/assets/index-D5rRQ8Hm.css` | 68 KB | `5d41c2a33a410251f88fdbdaf0e3b66844229b66cb7d6ad0f548b522e0327638` |
-| `out/renderer/index.html` | 1 KB | `8c8219a0a1aa3a50c218d58bb79b93fc6edb454712ff42eac18c9629666bdbb1` |
+| `out/renderer/assets/index-Dv8iLBtG.js` | 2.2 MB | `2228ae4a4c79aa9a511dd30547f6dc552e9ace7c24f536e303ac0de6fef9f6d5` |
+| `out/renderer/index.html` | 1 KB | `1c39b3bd69dbc9cb56c029e7cb32c82439485ce3cc570bf79ce7cb3f2ae58a30` |
 | `package-lock.json` | 381 KB | `c06380b4479af62b50fd4b6ddce063bf8f3845cadf051212542b58f5f6533daf` |
 
 The renderer bundle is 65 files, 3.4 MB in total. Most of the file count is KaTeX fonts.
@@ -77,5 +77,5 @@ The installer is unsigned and has no update feed. It will show a SmartScreen war
 
 ## Size of the code
 
-- Source: 56 files, 9070 lines
-- Tests: 21 files, 3373 lines
+- Source: 58 files, 9455 lines
+- Tests: 23 files, 3717 lines

@@ -86,7 +86,7 @@ Everything is in the Electron user-data folder (Settings → Data → Open folde
 | --- | --- |
 | `nodal.db` | SQLite (WAL): providers, conversations, the message tree, settings, model cache, request log. Encrypted when encryption is on |
 | `keys.json` | `safeStorage` ciphertext, one entry per provider |
-| `vault.json` | Present only when encryption is on: the key-stretching settings and the sealed master key. Without it the database cannot be opened, so back it up together with `nodal.db` |
+| `vault.json` | Present only when encryption is on: the key-stretching settings, the sealed master key, and the wrong-passphrase setting and count. Without it the database cannot be opened, so back it up together with `nodal.db` |
 | `attachments/<name>` | Attached images, deduplicated by content hash. The name is the SHA-256 of the image, or with encryption on an HMAC of it |
 | `logs/` | Rotating metadata-only logs, 5 files of 2 MB |
 | `backups/` | Copy of `nodal.db` taken before each schema migration (encrypted if the database is) |
@@ -102,17 +102,19 @@ Chats can be encrypted with a passphrase (Settings → Security). It is off by d
 - **What is covered:** the whole database (conversations, the search index, settings, provider configuration, the request log), its journal files and migration backups, and attached images. API keys are separate and always encrypted by the operating system.
 - **How:** a random 256-bit master key encrypts everything. The database uses SQLCipher's format (AES-256 with a per-page HMAC) through [SQLite3 Multiple Ciphers](https://github.com/utelle/SQLite3MultipleCiphers); each image is AES-256-GCM under a name that does not reveal its content. The passphrase is stretched with scrypt (N = 2^17, about 128 MB per guess) into a key that seals the master key in `vault.json`. Changing the passphrase re-seals the master key; it does not rewrite the data.
 - **Turning it on or off** rewrites the existing database and images in place, with no restart. If the app is closed part-way, the next unlock finishes the job. Turning it on deletes the older, unencrypted migration backups.
+- **Locking.** NODAL locks when it is closed, when you choose Lock now (sidebar, Settings → Security, or Ctrl+Shift+L), and automatically: after a chosen time without keyboard or mouse input in its window (15 minutes by default; 1 minute to 1 hour, or never), and, unless set to never, when the computer is locked or goes to sleep (Windows and macOS report a locked screen; Linux does not, so only the timer and sleep apply there). Locking closes the database, removes the handlers that read it, wipes the keys from memory and reloads the window onto the lock screen. A reply that is still arriving is never cut off by the automatic lock, which waits for it; Lock now stops it and saves what had arrived.
+- **Wrong passphrases (optional, off by default).** "Delete all chats after 5 wrong passphrases in a row" makes the fifth wrong passphrase destroy the sealed key and then delete the database, images, backups and stored API keys; NODAL then starts empty. The count is kept in `vault.json`, so restarting does not reset it; the right passphrase does. The lock screen shows how many tries are left. This stops guessing at your keyboard. It does not stop someone who copies the data folder, who can guess elsewhere without the count, or who edits `vault.json`; only a strong passphrase protects against that. Deleted files are not overwritten sector by sector, but without the sealed key they cannot be decrypted. Exports kept elsewhere are untouched.
 - **No recovery.** A forgotten passphrase cannot be reset by anyone. Keep an export somewhere safe.
 - **Exports.** A ZIP export is plain, whether or not encryption is on. "Encrypted export" writes the same content as a `.nodalx` file protected by a passphrase of its own (scrypt and AES-256-GCM), and Import asks for that passphrase.
-- **What it does not protect against:** software running as you while NODAL is unlocked, a keylogger, or a weak passphrase. While unlocked the keys are in the main process's memory. Text that was on disk before encryption was turned on is overwritten in the database file, but the file system or an SSD may keep old blocks; full-disk encryption is still worth having. Logs are not encrypted and hold no message text. There is no auto-lock yet: NODAL locks when it is closed.
+- **What it does not protect against:** software running as you while NODAL is unlocked, a keylogger, or a weak passphrase. While unlocked the keys are in the main process's memory. Text that was on disk before encryption was turned on is overwritten in the database file, but the file system or an SSD may keep old blocks; full-disk encryption is still worth having. Logs are not encrypted and hold no message text. The window's own memory is dropped by a reload when NODAL locks, but nothing can promise the operating system has not paged it to disk.
 
 ## What is implemented
 
 All P0 and P1 requirements from the specification (F1 to F16): provider management from presets or custom URLs, encrypted key entry with validation, model discovery with a 24-hour cache and hand-entered model IDs, streaming chat with Stop, persistent conversations with full-text search, Markdown with code highlighting and optional math, per-conversation system prompt and sampling controls, regenerate, edit-and-resend and branch switching, provider extension controls, a separate reasoning block, image attachments, token counts with balance and rate-limit readouts, Markdown / JSON / ZIP export and import, themes and keyboard shortcuts, and several providers in one model picker.
 
-Also added since: restore from an export on the welcome screen, and optional passphrase encryption with encrypted exports (the database half of F19).
+Also added since: restore from an export on the welcome screen, and optional passphrase encryption with encrypted exports, Lock now and auto-lock (F19), and optional deletion after five wrong passphrases.
 
-Not implemented (P2 in the specification): model-generated titles (F17; titles come from the first message), prompt library (F18), auto-lock after idle time (the rest of F19), speech and image generation (F20).
+Not implemented (P2 in the specification): model-generated titles (F17; titles come from the first message), prompt library (F18), speech and image generation (F20).
 
 ## Where this differs from the specification
 
@@ -158,7 +160,7 @@ Still open, and not something the code can settle on its own:
 - **A screen-reader pass.** The automated scan finds missing labels and low contrast, not whether the app is pleasant to use without sight.
 - **An independent security review**, which now includes the encryption design described above.
 - **Build-time advisories.** `npm audit` reports issues in `picomatch` (no fixed version exists yet) and `minimatch` (fix needs a major downgrade of electron-builder). Both are glob libraries used only by build tools on patterns from this repository; nothing affected ships in the app. `npm audit --omit=dev` is clean.
-- **Auto-lock** after idle time, and languages other than English.
+- **Languages** other than English.
 
 ## Open questions, and the defaults chosen
 

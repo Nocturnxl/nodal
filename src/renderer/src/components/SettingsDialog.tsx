@@ -296,6 +296,7 @@ function Appearance() {
           <kbd>Esc</kbd> <span>Stop the reply</span>
           <kbd>Ctrl+I</kbd> <span>Show or hide the inspector</span>
           <kbd>Ctrl+,</kbd> <span>Settings</span>
+          <kbd>Ctrl+Shift+L</kbd> <span>Lock (when encryption is on)</span>
         </div>
       </div>
     </div>

@@ -48,8 +48,10 @@ function Problem({ children }: { children: ReactNode }) {
 }
 
 /** Shown instead of the app when chats are encrypted and the passphrase has not been given yet. */
-export function Unlock({ onUnlocked }: { onUnlocked(): void }) {
+export function Unlock({ status, onUnlocked }: { status: VaultStatus; onUnlocked(): void }) {
   const [passphrase, setPassphrase] = useState('');
+  const [remaining, setRemaining] = useState<number | null>(status.wipeAfter > 0 ? status.wipeAfter - status.failures : null);
+  const [wiped, setWiped] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -59,10 +61,13 @@ export function Unlock({ onUnlocked }: { onUnlocked(): void }) {
     setBusy(true);
     setError(null);
     try {
-      if (await nodal.vault.unlock(passphrase)) onUnlocked();
+      const r = await nodal.vault.unlock(passphrase);
+      setPassphrase('');
+      if (r.ok) onUnlocked();
+      else if (r.wiped) setWiped(true);
       else {
+        setRemaining(r.remaining);
         setError('That passphrase is not right.');
-        setPassphrase('');
       }
     } catch (err) {
       setError(parseIpcError(err).message);
@@ -70,6 +75,26 @@ export function Unlock({ onUnlocked }: { onUnlocked(): void }) {
       setBusy(false);
     }
   };
+
+  if (wiped) {
+    return (
+      <main className="brand-wash flex h-full items-center justify-center bg-bg px-6">
+        <div className="w-full max-w-[380px] space-y-4">
+          <Logo size={44} className="mb-2" />
+          <div role="alert">
+            <h1 className="text-[22px] font-semibold tracking-tight">The chats on this computer were deleted</h1>
+            <p className="mt-1 text-muted">
+              The wrong passphrase was entered too many times, and NODAL was set to delete everything when that happens. Chats, attached images and stored API keys are gone. Exports saved elsewhere are not
+              affected.
+            </p>
+          </div>
+          <Button variant="primary" className="w-full" autoFocus onClick={onUnlocked}>
+            Start again
+          </Button>
+        </div>
+      </main>
+    );
+  }
 
   return (
     <main className="brand-wash flex h-full items-center justify-center bg-bg px-6">
@@ -83,6 +108,11 @@ export function Unlock({ onUnlocked }: { onUnlocked(): void }) {
         </div>
         <Passphrase label="Passphrase" value={passphrase} onChange={setPassphrase} autoFocus autoComplete="current-password" />
         <Problem>{error}</Problem>
+        {remaining !== null && (
+          <p className="text-[13px] font-medium text-danger" aria-live="polite">
+            {remaining === 1 ? 'One more wrong passphrase deletes all chats on this computer.' : `${remaining} more wrong passphrases delete all chats on this computer.`}
+          </p>
+        )}
         <Button type="submit" variant="primary" className="w-full" disabled={!passphrase || busy}>
           {busy ? 'Unlocking…' : 'Unlock'}
         </Button>
@@ -107,6 +137,11 @@ function Card({ title, children }: { title: string; children: ReactNode }) {
 /** Settings → Security: turn encryption on or off, or change the passphrase. */
 export function SecuritySettings() {
   const toast = useStore((s) => s.toast);
+  const setEncrypted = useStore((s) => s.setEncrypted);
+  const lock = useStore((s) => s.lock);
+  const autoLockMinutes = useStore((s) => s.settings.autoLockMinutes);
+  const setSettings = useStore((s) => s.setSettings);
+  const autoLockId = useId();
   const [status, setStatus] = useState<VaultStatus | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -134,7 +169,9 @@ export function SecuritySettings() {
       const failed = await fn();
       if (failed) setError(failed);
       else reset();
-      setStatus(await nodal.vault.status());
+      const now = await nodal.vault.status();
+      setStatus(now);
+      setEncrypted(now.enabled);
     } catch (e) {
       setError(parseIpcError(e).message);
     } finally {
@@ -151,7 +188,7 @@ export function SecuritySettings() {
           <ShieldCheck size={16} className="text-accent" aria-hidden /> Encrypt chats on this computer {status.enabled ? <Badge tone="ok">On</Badge> : <Badge>Off</Badge>}
         </h2>
         <p className="mt-1 text-[13px] text-muted">
-          Encrypts your conversations, the search index, attached images and settings with a passphrase you choose. NODAL asks for it each time it starts. Your API keys are already encrypted by the operating
+          Encrypts your conversations, the search index, attached images and settings with a passphrase you choose. NODAL asks for it each time it starts and after it locks. Your API keys are already encrypted by the operating
           system, with or without this.
         </p>
       </div>
@@ -183,6 +220,52 @@ export function SecuritySettings() {
         </Card>
       ) : (
         <>
+          <Card title="Lock">
+            <div>
+              <label htmlFor={autoLockId} className="mb-1 block text-[12.5px] font-medium">
+                Lock automatically
+              </label>
+              <select id={autoLockId} className="field" value={autoLockMinutes} onChange={(e) => void setSettings({ autoLockMinutes: Number(e.target.value) })}>
+                {[...new Set([0, 1, 5, 15, 30, 60, autoLockMinutes])]
+                  .sort((a, b) => a - b)
+                  .map((m) => (
+                    <option key={m} value={m}>
+                      {m === 0 ? 'Never' : m === 1 ? 'After 1 minute without input' : m === 60 ? 'After 1 hour without input' : `After ${m} minutes without input`}
+                    </option>
+                  ))}
+              </select>
+            </div>
+            <p className="text-[12.5px] text-muted">
+              Unless this is set to Never, NODAL also locks when the computer is locked or goes to sleep. A reply that is still arriving is never cut off: NODAL locks when it has finished.
+            </p>
+            <Button onClick={lock}>
+              <Lock size={13} /> Lock now
+            </Button>
+            <p className="text-[12.5px] text-muted">Lock now stops any reply that is still arriving. Shortcut: Ctrl+Shift+L.</p>
+          </Card>
+          <Card title="Wrong passphrases">
+            <label className="flex items-start gap-2 text-[13px]">
+              <input
+                type="checkbox"
+                className="mt-1"
+                checked={status.wipeAfter > 0}
+                disabled={busy}
+                onChange={(e) => {
+                  const on = e.target.checked;
+                  void run(async () => {
+                    await nodal.vault.setWipe(on);
+                    return null;
+                  });
+                }}
+              />
+              <span>Delete all chats after 5 wrong passphrases in a row</span>
+            </label>
+            <p className="text-[12.5px] text-muted">
+              Off unless you turn it on. The count survives restarts and starts again after a right passphrase. On the fifth wrong one NODAL permanently deletes the chats, attached images and stored API keys
+              on this computer; nothing can bring them back, so keep an encrypted export somewhere else. This stops someone guessing at your keyboard. It does not stop someone who copies the data folder and
+              guesses elsewhere: only a strong passphrase does.
+            </p>
+          </Card>
           <Card title="Change passphrase">
             <Passphrase label="Current passphrase" value={current} onChange={setCurrent} autoComplete="current-password" />
             <NewPassphrase key={formKey} onValid={setFresh} />

@@ -1,5 +1,5 @@
 import { createCipheriv, createDecipheriv, hkdfSync, randomBytes, scrypt, timingSafeEqual } from 'node:crypto';
-import { existsSync, readFileSync, renameSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, readFileSync, renameSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { nodalError } from '../net/errors';
 
@@ -15,6 +15,8 @@ import { nodalError } from '../net/errors';
 // unsealed, by anyone.
 
 export const MIN_PASSPHRASE = 8;
+/** With the option on, this many wrong passphrases in a row delete the chats. */
+export const WIPE_AFTER = 5;
 
 const AAD = Buffer.from('nodal-vault-v1');
 
@@ -32,6 +34,15 @@ interface VaultFile {
   nonce: string;
   tag: string;
   sealed: string;
+  /** Delete everything after this many wrong passphrases in a row. Absent or 0 = never. */
+  wipeAfter?: number;
+  /** Wrong passphrases since the last right one. Kept here because it must be readable while locked. */
+  failures?: number;
+}
+
+export interface VaultGuard {
+  wipeAfter: number;
+  failures: number;
 }
 
 /** The keys in use while the app is unlocked. Never written to disk, never sent to the renderer. */
@@ -126,17 +137,63 @@ export class Vault {
     const cipher = createCipheriv('aes-256-gcm', wrapping, nonce);
     cipher.setAAD(AAD);
     const sealed = Buffer.concat([cipher.update(master), cipher.final()]);
-    const out: VaultFile = {
+    // A new passphrase keeps the wrong-passphrase setting; the count starts again.
+    const wipeAfter = this.enabled ? this.guard.wipeAfter : 0;
+    this.write({
       version: 1,
       kdf,
       nonce: nonce.toString('base64'),
       tag: cipher.getAuthTag().toString('base64'),
       sealed: sealed.toString('base64'),
-    };
+      ...(wipeAfter ? { wipeAfter } : {}),
+    });
+  }
+
+  private write(out: VaultFile): void {
     // Write beside the old file and swap, so a crash never leaves a half-written vault.
     const tmp = `${this.file}.tmp`;
     writeFileSync(tmp, JSON.stringify(out, null, 2), { mode: 0o600 });
     renameSync(tmp, this.file);
+  }
+
+  /** The wrong-passphrase setting and the current count. */
+  get guard(): VaultGuard {
+    if (!this.enabled) return { wipeAfter: 0, failures: 0 };
+    const v = this.read();
+    const int = (n: unknown) => (typeof n === 'number' && Number.isInteger(n) && n > 0 ? n : 0);
+    return { wipeAfter: int(v.wipeAfter), failures: int(v.failures) };
+  }
+
+  /** Turns deleting after wrong passphrases on (a count) or off (0). */
+  setWipeAfter(count: number): void {
+    const { wipeAfter: _old, failures: _count, ...rest } = this.read();
+    this.write(count > 0 ? { ...rest, wipeAfter: count } : rest);
+  }
+
+  /** Counts a wrong passphrase on disk, so restarting the app does not start the count again. */
+  recordFailure(): VaultGuard {
+    const v = this.read();
+    const failures = this.guard.failures + 1;
+    this.write({ ...v, failures });
+    return { wipeAfter: this.guard.wipeAfter, failures };
+  }
+
+  private clearFailures(): void {
+    const { failures, ...rest } = this.read();
+    if (failures) this.write(rest);
+  }
+
+  /**
+   * Destroys the sealed key. Everything it encrypted becomes unreadable for
+   * good, whether or not the encrypted files themselves are then deleted.
+   */
+  destroy(): void {
+    try {
+      writeFileSync(this.file, randomBytes(Math.max(512, statSync(this.file).size)));
+    } catch {
+      /* removed below either way */
+    }
+    this.remove();
   }
 
   private async open(passphrase: string): Promise<Buffer | null> {
@@ -167,8 +224,15 @@ export class Vault {
   async unlock(passphrase: string): Promise<VaultKeys | null> {
     const master = await this.open(passphrase);
     if (!master) return null;
+    this.clearFailures();
     this.master = master;
     return derive(master);
+  }
+
+  /** Forgets the master key. The passphrase is needed again to get it back. */
+  lock(): void {
+    this.master?.fill(0);
+    this.master = null;
   }
 
   /** True when the passphrase is the current one. */
