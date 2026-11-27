@@ -1,0 +1,22 @@
+name: Feature request
+description: Suggest an improvement or a new capability.
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What are you trying to do?
+      description: The situation or problem behind the request. This matters more than the proposed solution.
+    validations:
+      required: true
+  - type: textarea
+    id: idea
+    attributes:
+      label: What would you like NODAL to do?
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: How do you manage today?
+      description: Any workaround or other tool you use for this.

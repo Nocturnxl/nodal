@@ -1,6 +1,6 @@
 appId: app.nodal.desktop
 productName: NODAL
-copyright: NODAL
+copyright: Copyright (c) 2026 Nocturnxl and NODAL contributors
 directories:
   output: dist
   buildResources: build
@@ -11,6 +11,8 @@ files:
 extraResources:
   - from: THIRD-PARTY-NOTICES.md
     to: THIRD-PARTY-NOTICES.md
+  - from: LICENSE
+    to: LICENSE
   - from: build/icon.png
     to: icon.png
 asar: true
@@ -41,7 +43,9 @@ win:
   # Signed when a certificate is configured (CSC_LINK / CSC_KEY_PASSWORD or
   # win.signtoolOptions). Unsigned builds work but show a SmartScreen warning
   # on other machines.
+# Installer file names carry no version, so the "latest release" download links never change.
 nsis:
+  artifactName: NODAL-Setup-windows-${arch}.${ext}
   oneClick: false
   perMachine: false
   allowToChangeInstallationDirectory: true
@@ -53,6 +57,7 @@ mac:
     - dmg
   category: public.app-category.productivity
   hardenedRuntime: true
+  artifactName: NODAL-macos-${arch}.${ext}
   # Voice chat: macOS shows this text when it asks for the microphone, and a
   # signed build needs the audio-input entitlement to be allowed to ask.
   entitlements: build/entitlements.mac.plist
@@ -68,6 +73,7 @@ linux:
   # Published in the .deb's metadata as the package maintainer.
   maintainer: NODAL <150420308+Nocturnxl@users.noreply.github.com>
   category: Utility
+  artifactName: NODAL-linux-${arch}.${ext}
 
 # No update feed is configured: releases are manual downloads until one is
 # added here (GitHub release or a static host). The in-app update check is a

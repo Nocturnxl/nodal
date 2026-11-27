@@ -1,0 +1,59 @@
+name: Bug report
+description: Something in NODAL does not work as it should.
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for reporting. Please do **not** paste API keys, passphrases or private conversations.
+        NODAL's logs (Settings → About) contain none of these and are safe to attach.
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened?
+      description: What you did, what you expected, and what happened instead.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Open …
+        2. Click …
+        3. See …
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: NODAL version
+      description: Shown under Settings → About.
+      placeholder: 0.1.0
+    validations:
+      required: true
+  - type: dropdown
+    id: os
+    attributes:
+      label: Operating system
+      options:
+        - Windows
+        - macOS
+        - Linux
+    validations:
+      required: true
+  - type: input
+    id: os-version
+    attributes:
+      label: Operating system version
+      placeholder: Windows 11 24H2, macOS 15.1, Ubuntu 24.04 …
+  - type: input
+    id: provider
+    attributes:
+      label: Provider and model, if relevant
+      placeholder: Venice.ai, model name …
+  - type: textarea
+    id: error
+    attributes:
+      label: Error message
+      description: The text of any error shown, including the request ID if there is one.

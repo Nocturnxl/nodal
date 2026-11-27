@@ -1,0 +1,69 @@
+name: Platform or provider test report
+description: Tell us how NODAL behaved on macOS or Linux, or with a provider that has not been verified yet. Good news is as useful as bad.
+title: "Test report: "
+labels: [test report]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        The macOS and Linux builds, and several provider presets, have passed automated tests but have never been tried by a person.
+        A few minutes of your time closes that gap. Answer what you can; every item is optional except the first three.
+        Please do not paste API keys, passphrases or private conversations.
+  - type: input
+    id: version
+    attributes:
+      label: NODAL version
+      placeholder: 0.1.0
+    validations:
+      required: true
+  - type: input
+    id: system
+    attributes:
+      label: Operating system, version and hardware
+      placeholder: macOS 15.1 on a MacBook Air M2 / Ubuntu 24.04 with GNOME on x86-64
+    validations:
+      required: true
+  - type: dropdown
+    id: file
+    attributes:
+      label: Which download did you use?
+      options:
+        - NODAL-macos-arm64.dmg
+        - NODAL-linux-x86_64.AppImage
+        - NODAL-linux-amd64.deb
+        - NODAL-Setup-windows-x64.exe
+        - Built from source
+    validations:
+      required: true
+  - type: checkboxes
+    id: basics
+    attributes:
+      label: What worked?
+      description: Tick everything you tried that worked. Leave unticked what failed or what you did not try, and explain below.
+      options:
+        - label: Installed and opened (after allowing the unsigned app)
+        - label: Connected a provider and saved an API key
+        - label: The key was still there after quitting and reopening
+        - label: Sent a message and received a streamed reply
+        - label: Attached an image
+        - label: Exported and imported conversations
+        - label: Turned on encryption, quit, and unlocked again
+        - label: Lock now and automatic locking
+        - label: Voice chat - the system asked for microphone permission
+        - label: Voice chat - my speech was transcribed and the reply was spoken
+        - label: Keyboard shortcuts (Cmd on macOS)
+  - type: input
+    id: providers
+    attributes:
+      label: Providers you tried
+      placeholder: Venice.ai, OpenAI, LM Studio, Ollama …
+  - type: textarea
+    id: problems
+    attributes:
+      label: What did not work, or looked wrong?
+      description: Include the exact wording of any system warning or error, and what you had to do to get past it.
+  - type: textarea
+    id: install
+    attributes:
+      label: Installation notes
+      description: Anything the installation guide got wrong or left out for your system.

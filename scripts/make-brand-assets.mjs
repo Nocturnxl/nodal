@@ -1,4 +1,4 @@
-// Builds the icon and in-app logo from the artwork in assets/brand/source.
+// Builds the icon and in-app logo from the artwork in assets/branding/source.
 // The sources are raster images on a white background; this removes the white
 // so they work on light and dark surfaces, and trims them to the artwork.
 //
@@ -15,7 +15,7 @@ import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 
 const root = resolve(import.meta.dirname, '..');
-const src = (name) => readFileSync(join(root, 'assets/brand/source', name)).toString('base64');
+const src = (name) => readFileSync(join(root, 'assets/branding/source', name)).toString('base64');
 const userData = mkdtempSync(join(tmpdir(), 'nodal-brand-'));
 const app = await electron.launch({ args: [root], env: { ...process.env, NODAL_USER_DATA: userData } });
 const page = await app.firstWindow();

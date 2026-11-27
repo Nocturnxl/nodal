@@ -2,7 +2,7 @@
 
 Measured 2026-11-20 on one machine: Windows 11 Pro 10.0.26300 x64, AMD Ryzen 9 9950X3D 16-Core, 62 GB RAM, Electron 45.3.3. This is a fast desktop, so treat the absolute numbers as a best case.
 
-Every figure here came from a run in this session. The provider in all of them is the local mock server on loopback, so nothing here measures a real provider or a real network.
+Every figure here came from an actual run on that date. The provider in all of them is the local mock server on loopback, so nothing here measures a real provider or a real network.
 
 ## Against the specification's performance targets
 

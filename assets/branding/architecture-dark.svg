@@ -1,0 +1,68 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 500" width="1000" height="500" role="img" aria-labelledby="title desc">
+  <title id="title">How NODAL connects you to AI models</title>
+  <desc id="desc">You use the NODAL window on your computer. The window talks only to NODAL's main process, which stores chats and API keys on your computer and sends requests directly to the cloud providers or local model servers you configure. There are no NODAL servers in between.</desc>
+  <defs>
+    <marker id="head" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0 L10 5 L0 10 z" fill="#9aa5ff"/></marker>
+    <marker id="tail" viewBox="0 0 10 10" refX="1" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M10 0 L0 5 L10 10 z" fill="#9aa5ff"/></marker>
+  </defs>
+
+  
+  <rect x="160" y="24" width="452" height="420" rx="12" fill="#161924" stroke="#3a4058" stroke-width="1.25"/>
+  <text x="178" y="52" font-family="system-ui, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="11.5" font-weight="600" letter-spacing="1.2" fill="#a2a8bd">NODAL · ON YOUR COMPUTER</text>
+  
+  <rect x="16" y="76" width="96" height="64" rx="8" fill="#1e2230" stroke="#3a4058" stroke-width="1.25"/>
+  <text x="32" y="103" font-family="system-ui, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="14" font-weight="600" fill="#e8eaf4">You</text>
+  <text x="32" y="124" font-family="system-ui, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12.5" fill="#a2a8bd">type or talk</text>
+  <line x1="114" y1="108" x2="178" y2="108" stroke="#9aa5ff" stroke-width="1.6" marker-end="url(#head)" marker-start="url(#tail)"/>
+  
+  <rect x="180" y="66" width="412" height="84" rx="8" fill="#1e2230" stroke="#3a4058" stroke-width="1.25"/>
+  <text x="196" y="93" font-family="system-ui, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="14" font-weight="600" fill="#e8eaf4">Interface window</text>
+  <text x="196" y="114" font-family="system-ui, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12.5" fill="#a2a8bd">Sandboxed. Makes no network requests.</text>
+  <text x="196" y="132" font-family="system-ui, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12.5" fill="#a2a8bd">Never receives an API key.</text>
+  <line x1="386" y1="150" x2="386" y2="192" stroke="#9aa5ff" stroke-width="1.6" marker-end="url(#head)" marker-start="url(#tail)"/>
+  
+  <rect x="180" y="194" width="412" height="84" rx="8" fill="#1e2230" stroke="#9aa5ff" stroke-width="1.25"/>
+  <text x="196" y="221" font-family="system-ui, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="14" font-weight="600" fill="#e8eaf4">Main process</text>
+  <text x="196" y="242" font-family="system-ui, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12.5" fill="#a2a8bd">Holds keys, builds requests, streams replies back.</text>
+  <text x="196" y="260" font-family="system-ui, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12.5" fill="#a2a8bd">Sends only to the hosts you configured.</text>
+  <line x1="282" y1="278" x2="282" y2="318" stroke="#9aa5ff" stroke-width="1.6" marker-end="url(#head)"/>
+  <line x1="490" y1="278" x2="490" y2="318" stroke="#9aa5ff" stroke-width="1.6" marker-end="url(#head)" marker-start="url(#tail)"/>
+  
+  <rect x="180" y="320" width="200" height="104" rx="8" fill="#1e2230" stroke="#3a4058" stroke-width="1.25"/>
+  <text x="196" y="347" font-family="system-ui, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="14" font-weight="600" fill="#e8eaf4">Chats and settings</text>
+  <text x="196" y="368" font-family="system-ui, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12.5" fill="#a2a8bd">One SQLite file.</text>
+  <text x="196" y="386" font-family="system-ui, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12.5" fill="#a2a8bd">Optional passphrase</text>
+  <text x="196" y="404" font-family="system-ui, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12.5" fill="#a2a8bd">encryption.</text>
+  
+  <rect x="392" y="320" width="200" height="104" rx="8" fill="#1e2230" stroke="#3a4058" stroke-width="1.25"/>
+  <text x="408" y="347" font-family="system-ui, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="14" font-weight="600" fill="#e8eaf4">API keys</text>
+  <text x="408" y="368" font-family="system-ui, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12.5" fill="#a2a8bd">Encrypted by the</text>
+  <text x="408" y="386" font-family="system-ui, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12.5" fill="#a2a8bd">operating system</text>
+  <text x="408" y="404" font-family="system-ui, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12.5" fill="#a2a8bd">credential store.</text>
+
+  
+  <rect x="700" y="24" width="284" height="190" rx="12" fill="#161924" stroke="#3a4058" stroke-width="1.25"/>
+  <text x="718" y="52" font-family="system-ui, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="11.5" font-weight="600" letter-spacing="1.2" fill="#a2a8bd">CLOUD PROVIDERS</text>
+  
+  <rect x="720" y="66" width="244" height="128" rx="8" fill="#1e2230" stroke="#3a4058" stroke-width="1.25"/>
+  <text x="736" y="93" font-family="system-ui, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="14" font-weight="600" fill="#e8eaf4">Your accounts</text>
+  <text x="736" y="114" font-family="system-ui, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12.5" fill="#a2a8bd">Venice.ai · OpenRouter · OpenAI</text>
+  <text x="736" y="132" font-family="system-ui, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12.5" fill="#a2a8bd">Any OpenAI-compatible</text>
+  <text x="736" y="150" font-family="system-ui, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12.5" fill="#a2a8bd">endpoint you add</text>
+  <line x1="592" y1="222" x2="716" y2="138" stroke="#9aa5ff" stroke-width="1.6" marker-end="url(#head)"/>
+  <rect x="602.1" y="154" width="103.8" height="22" rx="11" fill="#272d57"/><text x="654" y="169.5" text-anchor="middle" font-family="system-ui, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="11.5" font-weight="600" fill="#9aa5ff">HTTPS, direct</text>
+
+  
+  <rect x="700" y="254" width="284" height="190" rx="12" fill="#161924" stroke="#3a4058" stroke-width="1.25"/>
+  <text x="718" y="282" font-family="system-ui, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="11.5" font-weight="600" letter-spacing="1.2" fill="#a2a8bd">LOCAL INFERENCE</text>
+  
+  <rect x="720" y="296" width="244" height="128" rx="8" fill="#1e2230" stroke="#3a4058" stroke-width="1.25"/>
+  <text x="736" y="323" font-family="system-ui, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="14" font-weight="600" fill="#e8eaf4">Your hardware</text>
+  <text x="736" y="344" font-family="system-ui, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12.5" fill="#a2a8bd">LM Studio · Ollama</text>
+  <text x="736" y="362" font-family="system-ui, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12.5" fill="#a2a8bd">On this computer or</text>
+  <text x="736" y="380" font-family="system-ui, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12.5" fill="#a2a8bd">your own network</text>
+  <line x1="592" y1="252" x2="716" y2="352" stroke="#9aa5ff" stroke-width="1.6" marker-end="url(#head)"/>
+  <rect x="595.5" y="306" width="117" height="22" rx="11" fill="#272d57"/><text x="654" y="321.5" text-anchor="middle" font-family="system-ui, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="11.5" font-weight="600" fill="#9aa5ff">localhost / LAN</text>
+
+  <text x="500" y="482" text-anchor="middle" font-family="system-ui, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12.5" fill="#a2a8bd">No NODAL servers in between. No account. No telemetry.</text>
+</svg>
