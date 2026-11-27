@@ -102,7 +102,7 @@ Releases are built by CI, not on a developer's machine.
    git push origin v0.1.0
    ```
 
-4. CI runs the full checks again for the tag, then its `release` job collects the installers from all three platforms, writes `SHA256SUMS.txt`, and creates a **draft** GitHub release with the release notes.
+4. CI opens a **draft** GitHub release with the release notes, runs the full checks again for the tag on all three platforms, attaches each platform's installers to the draft, and then adds `SHA256SUMS.txt`.
 5. Review the draft on GitHub and publish it.
 
 Not in place yet: code signing, notarization, and an update feed (`publish` is `null` in `electron-builder.yml`, so the in-app update check does nothing).
